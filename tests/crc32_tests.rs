@@ -20,5 +20,5 @@ fn canonical_check_value() {
 fn single_byte_vectors() {
     // Independently reproducible zlib crc32 values.
     assert_eq!(checksum(b"a"), 0xE8B7_BE43);
-    assert_eq!(checksum(b"abc"), 0x3526_0197);
+    assert_eq!(checksum(b"abc"), 0x3524_41C2);
 }
