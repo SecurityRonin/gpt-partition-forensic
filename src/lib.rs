@@ -12,6 +12,11 @@
 //! `vmdk`, …) for E01/VHD/VMDK input.
 
 pub mod crc32;
+pub mod guid;
+pub mod header;
+
+pub use guid::Guid;
+pub use header::GptHeader;
 
 /// Crate-level error type.
 #[derive(Debug, thiserror::Error)]
