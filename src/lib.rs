@@ -12,9 +12,11 @@
 //! `vmdk`, …) for E01/VHD/VMDK input.
 
 pub mod crc32;
+pub mod entry;
 pub mod guid;
 pub mod header;
 
+pub use entry::GptEntry;
 pub use guid::Guid;
 pub use header::GptHeader;
 
