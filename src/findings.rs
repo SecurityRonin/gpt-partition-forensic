@@ -58,6 +58,10 @@ impl fmt::Display for Severity {
 pub enum AnomalyKind {
     /// A GPT header's self-CRC does not match its contents.
     HeaderCrcInvalid { location: Location },
+    /// Non-zero bytes in the GPT header LBA past `header_size` — a region the
+    /// UEFI spec requires to be zero and that the header CRC does not cover, so
+    /// it is a CRC-invisible place to hide data.
+    HeaderSlackData { location: Location },
     /// A GPT header's `my_lba` field disagrees with the LBA it was actually read
     /// from — a relocated or forged header.
     HeaderLbaMismatch {
@@ -124,6 +128,7 @@ impl AnomalyKind {
         match self {
             K::OverlappingPartitions { .. } => Severity::Critical,
             K::HeaderCrcInvalid { .. }
+            | K::HeaderSlackData { .. }
             | K::HeaderLbaMismatch { .. }
             | K::PartitionArrayCrcInvalid { .. }
             | K::BackupGptUnreadable
@@ -145,6 +150,7 @@ impl AnomalyKind {
         use AnomalyKind as K;
         match self {
             K::HeaderCrcInvalid { .. } => "GPT-HDR-CRC",
+            K::HeaderSlackData { .. } => "GPT-HDR-SLACK",
             K::HeaderLbaMismatch { .. } => "GPT-HDR-LBA",
             K::PartitionArrayCrcInvalid { .. } => "GPT-ARRAY-CRC",
             K::BackupGptUnreadable => "GPT-BACKUP-MISSING",
@@ -169,6 +175,10 @@ impl AnomalyKind {
             K::HeaderCrcInvalid { location } => {
                 format!("{location} GPT header CRC is invalid — corruption or tampering")
             }
+            K::HeaderSlackData { location } => format!(
+                "{location} GPT header has non-zero bytes past header_size (CRC-unprotected \
+                 reserved area) — possible hidden data"
+            ),
             K::HeaderLbaMismatch {
                 location,
                 claimed,

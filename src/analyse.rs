@@ -46,6 +46,7 @@ pub fn analyse<R: Read + Seek>(reader: &mut R, disk_size_bytes: u64) -> Result<G
     if !primary.header_crc_valid {
         record(&mut anomalies, AnomalyKind::HeaderCrcInvalid { location: Location::Primary });
     }
+    check_header_slack(&primary_sector, primary.header_size, Location::Primary, &mut anomalies);
     if primary.my_lba != 1 {
         record(
             &mut anomalies,
@@ -122,6 +123,20 @@ fn record(anomalies: &mut Vec<Anomaly>, kind: AnomalyKind) {
     anomalies.push(Anomaly::new(kind));
 }
 
+/// Flag non-zero bytes in the GPT header LBA past `header_size` (the
+/// CRC-unprotected reserved area the UEFI spec requires to be zero).
+fn check_header_slack(
+    sector: &[u8; 512],
+    header_size: u32,
+    location: Location,
+    anomalies: &mut Vec<Anomaly>,
+) {
+    let start = (header_size as usize).clamp(92, 512);
+    if sector[start..].iter().any(|&b| b != 0) {
+        record(anomalies, AnomalyKind::HeaderSlackData { location });
+    }
+}
+
 /// Read the leading 512 bytes of the sector at `lba` (enough for a GPT header;
 /// the header is 92 bytes and never spans sectors). `sector_size` sets the LBA→
 /// byte stride (512 or 4096).
@@ -159,9 +174,11 @@ fn read_backup<R: Read + Seek>(
     sector_size: u64,
     anomalies: &mut Vec<Anomaly>,
 ) -> Option<GptHeader> {
-    let Ok(Ok(backup)) =
-        read_sector(reader, primary.alternate_lba, sector_size).map(|s| GptHeader::parse(&s))
-    else {
+    let Ok(backup_sector) = read_sector(reader, primary.alternate_lba, sector_size) else {
+        record(anomalies, AnomalyKind::BackupGptUnreadable);
+        return None;
+    };
+    let Ok(backup) = GptHeader::parse(&backup_sector) else {
         record(anomalies, AnomalyKind::BackupGptUnreadable);
         return None;
     };
@@ -169,6 +186,7 @@ fn read_backup<R: Read + Seek>(
     if !backup.header_crc_valid {
         record(anomalies, AnomalyKind::HeaderCrcInvalid { location: Location::Backup });
     }
+    check_header_slack(&backup_sector, backup.header_size, Location::Backup, anomalies);
     if backup.my_lba != primary.alternate_lba {
         record(
             anomalies,
