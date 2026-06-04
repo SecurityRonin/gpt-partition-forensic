@@ -50,7 +50,12 @@ pub fn analyse<R: Read + Seek>(reader: &mut R, disk_size_bytes: u64) -> Result<G
 
     // ── Partition geometry checks ───────────────────────────────────────────
     check_overlaps(&partitions, &mut anomalies);
-    check_bounds(&partitions, primary.last_usable_lba, &mut anomalies);
+    check_bounds(
+        &partitions,
+        primary.first_usable_lba,
+        primary.last_usable_lba,
+        &mut anomalies,
+    );
 
     for (a, b) in crate::collision::find_duplicate_partition_guids(&partitions) {
         record(&mut anomalies, AnomalyKind::DuplicatePartitionGuid { a, b });
@@ -218,8 +223,14 @@ fn check_overlaps(partitions: &[GptEntry], anomalies: &mut Vec<Anomaly>) {
     }
 }
 
-/// Flag partitions extending past the usable LBA range.
-fn check_bounds(partitions: &[GptEntry], last_usable: u64, anomalies: &mut Vec<Anomaly>) {
+/// Flag partitions extending outside the usable LBA range — past `last_usable`,
+/// or starting before `first_usable` (on the reserved GPT metadata region).
+fn check_bounds(
+    partitions: &[GptEntry],
+    first_usable: u64,
+    last_usable: u64,
+    anomalies: &mut Vec<Anomaly>,
+) {
     for (index, p) in partitions.iter().enumerate() {
         if p.last_lba > last_usable {
             record(
@@ -228,6 +239,16 @@ fn check_bounds(partitions: &[GptEntry], last_usable: u64, anomalies: &mut Vec<A
                     index,
                     last_lba: p.last_lba,
                     last_usable,
+                },
+            );
+        }
+        if p.first_lba < first_usable {
+            record(
+                anomalies,
+                AnomalyKind::PartitionOverlapsGptArea {
+                    index,
+                    first_lba: p.first_lba,
+                    first_usable,
                 },
             );
         }

@@ -73,6 +73,13 @@ pub enum AnomalyKind {
         last_lba: u64,
         last_usable: u64,
     },
+    /// A partition starts before `first_usable_lba` — it sits on the reserved
+    /// GPT header / entry-array region (clobbering or hiding behind metadata).
+    PartitionOverlapsGptArea {
+        index: usize,
+        first_lba: u64,
+        first_usable: u64,
+    },
     /// A GPT exists but the MBR has no protective (0xEE) entry guarding it —
     /// legacy tools may clobber the disk; also a tampering indicator.
     MissingProtectiveMbr,
@@ -106,7 +113,8 @@ impl AnomalyKind {
             | K::MissingProtectiveMbr
             | K::ProtectiveMbrUndersized { .. }
             | K::HybridMbrHiddenPartition { .. }
-            | K::DuplicatePartitionGuid { .. } => Severity::High,
+            | K::DuplicatePartitionGuid { .. }
+            | K::PartitionOverlapsGptArea { .. } => Severity::High,
         }
     }
 
@@ -122,6 +130,7 @@ impl AnomalyKind {
             K::OverlappingPartitions { .. } => "GPT-PART-OVERLAP",
             K::DuplicatePartitionGuid { .. } => "GPT-PART-DUPGUID",
             K::PartitionOutOfBounds { .. } => "GPT-PART-OOB",
+            K::PartitionOverlapsGptArea { .. } => "GPT-PART-RESERVED",
             K::MissingProtectiveMbr => "GPT-MBR-NOPROT",
             K::ProtectiveMbrUndersized { .. } => "GPT-MBR-UNDERSIZED",
             K::HybridMbrHiddenPartition { .. } => "GPT-MBR-HYBRID-HIDDEN",
@@ -157,6 +166,14 @@ impl AnomalyKind {
                 last_usable,
             } => format!(
                 "Partition {index} ends at LBA {last_lba}, beyond the usable range (last usable {last_usable})"
+            ),
+            K::PartitionOverlapsGptArea {
+                index,
+                first_lba,
+                first_usable,
+            } => format!(
+                "Partition {index} starts at LBA {first_lba}, before first usable {first_usable} — \
+                 overlaps the reserved GPT metadata region"
             ),
             K::MissingProtectiveMbr => {
                 "GPT present but the MBR has no protective (0xEE) entry guarding it".to_string()
