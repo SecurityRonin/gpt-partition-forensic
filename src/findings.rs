@@ -61,6 +61,12 @@ pub enum AnomalyKind {
     PartitionArrayCrcInvalid { location: Location },
     /// The backup GPT is missing or unreadable.
     BackupGptUnreadable,
+    /// The disk extends past the backup GPT (`alternate_lba`) — the tail region
+    /// is hidden from GPT-aware tools (e.g. a disk resized without moving the GPT).
+    BackupGptNotAtDiskEnd {
+        alternate_lba: u64,
+        disk_last_lba: u64,
+    },
     /// A header field that should match between primary and backup differs.
     PrimaryBackupDivergence { field: &'static str },
     /// Two partitions claim overlapping LBA ranges.
@@ -108,6 +114,7 @@ impl AnomalyKind {
             K::HeaderCrcInvalid { .. }
             | K::PartitionArrayCrcInvalid { .. }
             | K::BackupGptUnreadable
+            | K::BackupGptNotAtDiskEnd { .. }
             | K::PrimaryBackupDivergence { .. }
             | K::PartitionOutOfBounds { .. }
             | K::MissingProtectiveMbr
@@ -126,6 +133,7 @@ impl AnomalyKind {
             K::HeaderCrcInvalid { .. } => "GPT-HDR-CRC",
             K::PartitionArrayCrcInvalid { .. } => "GPT-ARRAY-CRC",
             K::BackupGptUnreadable => "GPT-BACKUP-MISSING",
+            K::BackupGptNotAtDiskEnd { .. } => "GPT-BACKUP-NOTATEND",
             K::PrimaryBackupDivergence { .. } => "GPT-DIVERGENCE",
             K::OverlappingPartitions { .. } => "GPT-PART-OVERLAP",
             K::DuplicatePartitionGuid { .. } => "GPT-PART-DUPGUID",
@@ -151,6 +159,13 @@ impl AnomalyKind {
             K::BackupGptUnreadable => {
                 "Backup GPT is missing or unreadable — the disk cannot self-repair".to_string()
             }
+            K::BackupGptNotAtDiskEnd {
+                alternate_lba,
+                disk_last_lba,
+            } => format!(
+                "Backup GPT is at LBA {alternate_lba} but the disk ends at LBA {disk_last_lba} — \
+                 trailing region hidden from GPT-aware tools"
+            ),
             K::PrimaryBackupDivergence { field } => {
                 format!("Primary and backup GPT headers disagree on `{field}` — possible tampering")
             }

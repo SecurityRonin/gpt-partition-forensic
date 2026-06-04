@@ -48,6 +48,20 @@ pub fn analyse<R: Read + Seek>(reader: &mut R, disk_size_bytes: u64) -> Result<G
     // ── Backup header + entry array, reconciled with the primary ────────────
     let backup = read_backup(reader, &primary, &primary_array, &mut anomalies);
 
+    // The backup GPT should sit at the last LBA; anything past it is hidden.
+    if disk_size_bytes > 0 {
+        let disk_last_lba = (disk_size_bytes / SECTOR).saturating_sub(1);
+        if disk_last_lba > primary.alternate_lba {
+            record(
+                &mut anomalies,
+                AnomalyKind::BackupGptNotAtDiskEnd {
+                    alternate_lba: primary.alternate_lba,
+                    disk_last_lba,
+                },
+            );
+        }
+    }
+
     // ── Partition geometry checks ───────────────────────────────────────────
     check_overlaps(&partitions, &mut anomalies);
     check_bounds(
