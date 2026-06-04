@@ -13,8 +13,19 @@ use crate::findings::{Anomaly, AnomalyKind, GptAnalysis, Location};
 use crate::header::GptHeader;
 use crate::Error;
 
-/// Logical sector size (bytes).
-const SECTOR: u64 = 512;
+/// Probe the logical sector size by locating the GPT header ("EFI PART") at
+/// LBA 1 — byte 512 for 512-byte/512e sectors, byte 4096 for 4Kn. Defaults to
+/// 512 when neither matches (the primary parse then reports `BadSignature`).
+fn detect_sector_size<R: Read + Seek>(reader: &mut R) -> Result<u64, Error> {
+    for size in [512u64, 4096] {
+        reader.seek(SeekFrom::Start(size))?;
+        let mut sig = [0u8; 8];
+        if reader.read_exact(&mut sig).is_ok() && &sig == crate::header::SIGNATURE {
+            return Ok(size);
+        }
+    }
+    Ok(512)
+}
 
 /// Perform a full forensic analysis of a GPT-partitioned disk image.
 ///
@@ -27,9 +38,10 @@ const SECTOR: u64 = 512;
 #[cfg_attr(feature = "trace", tracing::instrument(level = "debug", skip(reader)))]
 pub fn analyse<R: Read + Seek>(reader: &mut R, disk_size_bytes: u64) -> Result<GptAnalysis, Error> {
     let mut anomalies = Vec::new();
+    let sector_size = detect_sector_size(reader)?;
 
     // ── Primary header + entry array ────────────────────────────────────────
-    let primary_sector = read_sector(reader, 1)?;
+    let primary_sector = read_sector(reader, 1, sector_size)?;
     let primary = GptHeader::parse(&primary_sector)?;
     if !primary.header_crc_valid {
         record(&mut anomalies, AnomalyKind::HeaderCrcInvalid { location: Location::Primary });
@@ -45,7 +57,7 @@ pub fn analyse<R: Read + Seek>(reader: &mut R, disk_size_bytes: u64) -> Result<G
         );
     }
 
-    let primary_array = read_entry_array(reader, &primary)?;
+    let primary_array = read_entry_array(reader, &primary, sector_size)?;
     if crc32::checksum(&primary_array) != primary.partition_array_crc32 {
         record(
             &mut anomalies,
@@ -56,11 +68,11 @@ pub fn analyse<R: Read + Seek>(reader: &mut R, disk_size_bytes: u64) -> Result<G
         parse_entry_array(&primary_array, primary.num_partition_entries, primary.partition_entry_size);
 
     // ── Backup header + entry array, reconciled with the primary ────────────
-    let backup = read_backup(reader, &primary, &primary_array, &mut anomalies);
+    let backup = read_backup(reader, &primary, &primary_array, sector_size, &mut anomalies);
 
     // The backup GPT should sit at the last LBA; anything past it is hidden.
     if disk_size_bytes > 0 {
-        let disk_last_lba = (disk_size_bytes / SECTOR).saturating_sub(1);
+        let disk_last_lba = (disk_size_bytes / sector_size).saturating_sub(1);
         if disk_last_lba > primary.alternate_lba {
             record(
                 &mut anomalies,
@@ -84,10 +96,10 @@ pub fn analyse<R: Read + Seek>(reader: &mut R, disk_size_bytes: u64) -> Result<G
     for (a, b) in crate::collision::find_duplicate_partition_guids(&partitions) {
         record(&mut anomalies, AnomalyKind::DuplicatePartitionGuid { a, b });
     }
-    check_encrypted_volumes(reader, &partitions, &mut anomalies);
+    check_encrypted_volumes(reader, &partitions, sector_size, &mut anomalies);
 
     // ── MBR ↔ GPT reconciliation (standalone — reads LBA 0 itself) ──────────
-    reconcile_mbr(reader, &partitions, disk_size_bytes, &mut anomalies);
+    reconcile_mbr(reader, &partitions, disk_size_bytes, sector_size, &mut anomalies);
 
     let disk_guid = primary.disk_guid;
     Ok(GptAnalysis {
@@ -95,6 +107,7 @@ pub fn analyse<R: Read + Seek>(reader: &mut R, disk_size_bytes: u64) -> Result<G
         backup,
         disk_guid,
         partitions,
+        sector_size,
         anomalies,
     })
 }
@@ -103,18 +116,28 @@ fn record(anomalies: &mut Vec<Anomaly>, kind: AnomalyKind) {
     anomalies.push(Anomaly::new(kind));
 }
 
-/// Read a single 512-byte sector at `lba`.
-fn read_sector<R: Read + Seek>(reader: &mut R, lba: u64) -> Result<[u8; 512], Error> {
-    reader.seek(SeekFrom::Start(lba * SECTOR))?;
+/// Read the leading 512 bytes of the sector at `lba` (enough for a GPT header;
+/// the header is 92 bytes and never spans sectors). `sector_size` sets the LBA→
+/// byte stride (512 or 4096).
+fn read_sector<R: Read + Seek>(
+    reader: &mut R,
+    lba: u64,
+    sector_size: u64,
+) -> Result<[u8; 512], Error> {
+    reader.seek(SeekFrom::Start(lba * sector_size))?;
     let mut buf = [0u8; 512];
     reader.read_exact(&mut buf)?;
     Ok(buf)
 }
 
 /// Read a header's partition entry array (`num * entry_size` bytes).
-fn read_entry_array<R: Read + Seek>(reader: &mut R, h: &GptHeader) -> Result<Vec<u8>, Error> {
+fn read_entry_array<R: Read + Seek>(
+    reader: &mut R,
+    h: &GptHeader,
+    sector_size: u64,
+) -> Result<Vec<u8>, Error> {
     let len = h.num_partition_entries as usize * h.partition_entry_size as usize;
-    reader.seek(SeekFrom::Start(h.partition_entry_lba * SECTOR))?;
+    reader.seek(SeekFrom::Start(h.partition_entry_lba * sector_size))?;
     let mut buf = vec![0u8; len];
     reader.read_exact(&mut buf)?;
     Ok(buf)
@@ -127,9 +150,11 @@ fn read_backup<R: Read + Seek>(
     reader: &mut R,
     primary: &GptHeader,
     primary_array: &[u8],
+    sector_size: u64,
     anomalies: &mut Vec<Anomaly>,
 ) -> Option<GptHeader> {
-    let Ok(Ok(backup)) = read_sector(reader, primary.alternate_lba).map(|s| GptHeader::parse(&s))
+    let Ok(Ok(backup)) =
+        read_sector(reader, primary.alternate_lba, sector_size).map(|s| GptHeader::parse(&s))
     else {
         record(anomalies, AnomalyKind::BackupGptUnreadable);
         return None;
@@ -148,7 +173,7 @@ fn read_backup<R: Read + Seek>(
             },
         );
     }
-    if let Ok(arr) = read_entry_array(reader, &backup) {
+    if let Ok(arr) = read_entry_array(reader, &backup, sector_size) {
         if crc32::checksum(&arr) != backup.partition_array_crc32 {
             record(
                 anomalies,
@@ -201,9 +226,10 @@ fn reconcile_mbr<R: Read + Seek>(
     reader: &mut R,
     partitions: &[GptEntry],
     disk_size_bytes: u64,
+    sector_size: u64,
     anomalies: &mut Vec<Anomaly>,
 ) {
-    let Ok(sector) = read_sector(reader, 0) else {
+    let Ok(sector) = read_sector(reader, 0, sector_size) else {
         return; // no readable MBR to reconcile against
     };
     let mbr = crate::mbr::parse_mbr_entries(&sector);
@@ -212,7 +238,7 @@ fn reconcile_mbr<R: Read + Seek>(
     match active.iter().find(|e| e.is_protective()) {
         None => record(anomalies, AnomalyKind::MissingProtectiveMbr),
         Some(p) if disk_size_bytes > 0 && p.lba_count != u32::MAX => {
-            let disk_last_lba = (disk_size_bytes / SECTOR).saturating_sub(1);
+            let disk_last_lba = (disk_size_bytes / sector_size).saturating_sub(1);
             let covered_last_lba = p.lba_end();
             if disk_last_lba.saturating_sub(covered_last_lba) > PROTECTIVE_UNDERSIZE_TOLERANCE {
                 record(
@@ -252,13 +278,14 @@ fn reconcile_mbr<R: Read + Seek>(
 fn check_encrypted_volumes<R: Read + Seek>(
     reader: &mut R,
     partitions: &[GptEntry],
+    sector_size: u64,
     anomalies: &mut Vec<Anomaly>,
 ) {
     for (index, p) in partitions.iter().enumerate() {
         if p.type_name() == Some("Linux LUKS") {
             continue;
         }
-        let Ok(sector) = read_sector(reader, p.first_lba) else {
+        let Ok(sector) = read_sector(reader, p.first_lba, sector_size) else {
             continue;
         };
         // A recognized filesystem magic means it is not an opaque encrypted blob.

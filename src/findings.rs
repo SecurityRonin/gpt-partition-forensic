@@ -280,6 +280,8 @@ pub struct GptAnalysis {
     pub disk_guid: Guid,
     /// In-use partitions parsed from the primary entry array.
     pub partitions: Vec<GptEntry>,
+    /// Logical sector size auto-detected from the GPT header location (512 or 4096).
+    pub sector_size: u64,
     /// All detected anomalies, in discovery order.
     pub anomalies: Vec<Anomaly>,
 }
