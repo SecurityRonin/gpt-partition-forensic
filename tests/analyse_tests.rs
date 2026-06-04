@@ -250,6 +250,29 @@ fn recognized_filesystem_not_flagged_as_encrypted() {
 }
 
 #[test]
+fn primary_header_lba_mismatch_flagged() {
+    // Replace the primary header (at LBA 1) with one that claims my_lba = 5,
+    // re-sealing its CRC so it self-validates but lies about its location.
+    let mut disk = build_gpt_disk();
+    let array_len = (NUM as usize) * (ESIZE as usize);
+    let array_crc = checksum(&disk[2 * 512..2 * 512 + array_len]);
+    let first_usable = 2 + ARRAY_SECTORS;
+    let last_usable = SECTORS - 1 - ARRAY_SECTORS - 1;
+    let backup_hdr_lba = SECTORS - 1;
+    let bad = header_sector(5, backup_hdr_lba, 2, first_usable, last_usable, array_crc);
+    disk[512..1024].copy_from_slice(&bad);
+    let a = analyse(&mut Cursor::new(disk), SECTORS * 512).unwrap();
+    assert!(
+        a.anomalies.iter().any(|x| matches!(
+            x.kind,
+            AnomalyKind::HeaderLbaMismatch { location: Location::Primary, .. }
+        )),
+        "got: {:?}",
+        a.anomalies.iter().map(|x| x.code).collect::<Vec<_>>()
+    );
+}
+
+#[test]
 fn overlapping_partitions_flagged() {
     // Rebuild with overlapping entries and matching CRCs.
     let mut disk = vec![0u8; (SECTORS * 512) as usize];
