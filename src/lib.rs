@@ -11,6 +11,7 @@
 //! decoding of its own — compose it with the container crates (`ewf`, `vhd`,
 //! `vmdk`, …) for E01/VHD/VMDK input.
 
+pub mod collision;
 pub mod crc32;
 pub mod entry;
 pub mod findings;
