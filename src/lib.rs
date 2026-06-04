@@ -19,6 +19,7 @@ pub mod findings;
 pub mod guid;
 pub mod header;
 pub mod mbr;
+pub mod sha256;
 
 mod analyse;
 
