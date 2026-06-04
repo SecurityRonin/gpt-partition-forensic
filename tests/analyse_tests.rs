@@ -229,6 +229,27 @@ fn high_entropy_partition_flagged_as_hidden_volume() {
 }
 
 #[test]
+fn recognized_filesystem_not_flagged_as_encrypted() {
+    // Partition 0 (LBA 34): a recognized FS magic ("XFSB") followed by
+    // high-entropy filler. A known filesystem must not be mistaken for a hidden
+    // encrypted volume.
+    let mut disk = build_gpt_disk();
+    let off = 34 * 512;
+    for (i, b) in disk[off..off + 512].iter_mut().enumerate() {
+        *b = (i % 256) as u8;
+    }
+    disk[off..off + 4].copy_from_slice(b"XFSB");
+    let a = analyse(&mut Cursor::new(disk), SECTORS * 512).unwrap();
+    assert!(
+        !a.anomalies
+            .iter()
+            .any(|x| matches!(x.kind, AnomalyKind::HiddenEncryptedVolume { .. })),
+        "recognized FS must not be flagged as encrypted; got: {:?}",
+        a.anomalies.iter().map(|x| x.code).collect::<Vec<_>>()
+    );
+}
+
+#[test]
 fn overlapping_partitions_flagged() {
     // Rebuild with overlapping entries and matching CRCs.
     let mut disk = vec![0u8; (SECTORS * 512) as usize];
