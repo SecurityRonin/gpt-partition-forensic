@@ -76,6 +76,13 @@ impl GptEntry {
     pub fn type_name(&self) -> Option<&'static str> {
         forensicnomicon::gpt::type_name(&self.type_guid.to_string())
     }
+
+    /// Decode the entry's attribute flags into human-readable names (bit order),
+    /// e.g. `["hidden", "no-automount"]`. Uses the `forensicnomicon` knowledge base.
+    #[must_use]
+    pub fn attribute_names(&self) -> Vec<&'static str> {
+        forensicnomicon::gpt::attribute_names(self.attributes)
+    }
 }
 
 /// Decode a UTF-16LE name field, stopping at the first NUL code unit.
