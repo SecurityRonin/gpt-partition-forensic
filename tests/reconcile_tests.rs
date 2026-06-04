@@ -45,8 +45,8 @@ fn header_sector(my: u64, alt: u64, elba: u64, fu: u64, lu: u64, acrc: u32) -> [
     s
 }
 
-/// Build a GPT disk with a caller-specified MBR (slot, type, lba_start, lba_count)
-/// and GPT partitions (first_lba, last_lba).
+/// Build a GPT disk with a caller-specified MBR (`slot`, `type`, `lba_start`,
+/// `lba_count`) and GPT partitions (`first_lba`, `last_lba`).
 fn build(mbr: &[(usize, u8, u32, u32)], gpt: &[(u64, u64)]) -> Vec<u8> {
     let mut disk = vec![0u8; (SECTORS * 512) as usize];
     disk[510] = 0x55;

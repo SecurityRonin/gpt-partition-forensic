@@ -4,7 +4,7 @@
 //! correct header and partition-array CRC-32s) entirely in memory, so the tests
 //! need no committed binary blob. Layout of the 64-sector image:
 //!
-//!   LBA 0  : protective MBR (left zero — `analyse` reads LBA 1 directly)
+//!   LBA 0  : protective MBR (single 0xEE entry spanning the disk)
 //!   LBA 1  : primary GPT header
 //!   LBA 2  : primary partition-entry array (4 × 128 B = 1 sector)
 //!   LBA 62 : backup partition-entry array
@@ -91,6 +91,14 @@ fn header(
 /// Build a clean, spec-valid GPT disk image with two partitions.
 pub fn build_gpt() -> Vec<u8> {
     let mut disk = vec![0u8; SECTOR * SECTORS];
+
+    // Protective MBR at LBA 0: a single 0xEE entry spanning the whole disk, so
+    // the MBR↔GPT reconciliation sees a well-formed protective MBR.
+    disk[450] = 0xEE; // entry 0 type (offset 446 + 4)
+    disk[454..458].copy_from_slice(&1u32.to_le_bytes()); // lba_start = 1
+    disk[458..462].copy_from_slice(&((SECTORS - 1) as u32).to_le_bytes());
+    disk[510] = 0x55;
+    disk[511] = 0xAA;
 
     let mut array = vec![0u8; 4 * 128];
     array[0..128].copy_from_slice(&entry(

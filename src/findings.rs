@@ -71,6 +71,22 @@ pub enum AnomalyKind {
         last_lba: u64,
         last_usable: u64,
     },
+    /// A GPT exists but the MBR has no protective (0xEE) entry guarding it —
+    /// legacy tools may clobber the disk; also a tampering indicator.
+    MissingProtectiveMbr,
+    /// The protective (0xEE) MBR entry does not span the whole disk, leaving a
+    /// tail exposed to GPT-unaware tooling.
+    ProtectiveMbrUndersized {
+        covered_last_lba: u64,
+        disk_last_lba: u64,
+    },
+    /// A hybrid-MBR partition entry describes an extent that matches no GPT
+    /// partition — visible to legacy tools but hidden from the GPT.
+    HybridMbrHiddenPartition {
+        mbr_index: usize,
+        lba_start: u32,
+        lba_count: u32,
+    },
 }
 
 impl AnomalyKind {
@@ -84,7 +100,10 @@ impl AnomalyKind {
             | K::PartitionArrayCrcInvalid { .. }
             | K::BackupGptUnreadable
             | K::PrimaryBackupDivergence { .. }
-            | K::PartitionOutOfBounds { .. } => Severity::High,
+            | K::PartitionOutOfBounds { .. }
+            | K::MissingProtectiveMbr
+            | K::ProtectiveMbrUndersized { .. }
+            | K::HybridMbrHiddenPartition { .. } => Severity::High,
         }
     }
 
@@ -99,6 +118,9 @@ impl AnomalyKind {
             K::PrimaryBackupDivergence { .. } => "GPT-DIVERGENCE",
             K::OverlappingPartitions { .. } => "GPT-PART-OVERLAP",
             K::PartitionOutOfBounds { .. } => "GPT-PART-OOB",
+            K::MissingProtectiveMbr => "GPT-MBR-NOPROT",
+            K::ProtectiveMbrUndersized { .. } => "GPT-MBR-UNDERSIZED",
+            K::HybridMbrHiddenPartition { .. } => "GPT-MBR-HYBRID-HIDDEN",
         }
     }
 
@@ -128,6 +150,24 @@ impl AnomalyKind {
                 last_usable,
             } => format!(
                 "Partition {index} ends at LBA {last_lba}, beyond the usable range (last usable {last_usable})"
+            ),
+            K::MissingProtectiveMbr => {
+                "GPT present but the MBR has no protective (0xEE) entry guarding it".to_string()
+            }
+            K::ProtectiveMbrUndersized {
+                covered_last_lba,
+                disk_last_lba,
+            } => format!(
+                "Protective MBR (0xEE) covers only up to LBA {covered_last_lba} but the disk ends \
+                 at LBA {disk_last_lba} — tail exposed to GPT-unaware tools"
+            ),
+            K::HybridMbrHiddenPartition {
+                mbr_index,
+                lba_start,
+                lba_count,
+            } => format!(
+                "Hybrid MBR entry {mbr_index} (LBA {lba_start}, {lba_count} sectors) matches no GPT \
+                 partition — legacy-visible but hidden from the GPT"
             ),
         }
     }

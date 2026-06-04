@@ -55,6 +55,14 @@ fn header_sector(
 fn build_gpt_disk() -> Vec<u8> {
     let mut disk = vec![0u8; (SECTORS * 512) as usize];
 
+    // Protective MBR at LBA 0: a single 0xEE entry spanning the whole disk, so
+    // the MBR↔GPT reconciliation sees a well-formed protective MBR.
+    disk[450] = 0xEE; // entry 0 type (offset 446 + 4)
+    disk[454..458].copy_from_slice(&1u32.to_le_bytes()); // lba_start = 1
+    disk[458..462].copy_from_slice(&((SECTORS - 1) as u32).to_le_bytes());
+    disk[510] = 0x55;
+    disk[511] = 0xAA;
+
     // Partition entry array (shared by primary + backup).
     let mut array = vec![0u8; (NUM as usize) * (ESIZE as usize)];
     array[0..128].copy_from_slice(&entry_bytes(ESP_TYPE, 34, 2047, "EFI System"));

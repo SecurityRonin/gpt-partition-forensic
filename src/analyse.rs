@@ -26,7 +26,6 @@ const SECTOR: u64 = 512;
 /// failure of the primary structures.
 #[cfg_attr(feature = "trace", tracing::instrument(level = "debug", skip(reader)))]
 pub fn analyse<R: Read + Seek>(reader: &mut R, disk_size_bytes: u64) -> Result<GptAnalysis, Error> {
-    let _ = disk_size_bytes;
     let mut anomalies = Vec::new();
 
     // ── Primary header + entry array ────────────────────────────────────────
@@ -52,6 +51,9 @@ pub fn analyse<R: Read + Seek>(reader: &mut R, disk_size_bytes: u64) -> Result<G
     // ── Partition geometry checks ───────────────────────────────────────────
     check_overlaps(&partitions, &mut anomalies);
     check_bounds(&partitions, primary.last_usable_lba, &mut anomalies);
+
+    // ── MBR ↔ GPT reconciliation (standalone — reads LBA 0 itself) ──────────
+    reconcile_mbr(reader, &partitions, disk_size_bytes, &mut anomalies);
 
     let disk_guid = primary.disk_guid;
     Ok(GptAnalysis {
@@ -129,6 +131,64 @@ fn read_backup<R: Read + Seek>(
     }
 
     Some(backup)
+}
+
+/// Minimum hidden tail (sectors) before an undersized protective MBR is flagged.
+const PROTECTIVE_UNDERSIZE_TOLERANCE: u64 = 2048;
+
+/// Reconcile the legacy/protective MBR (LBA 0) against the GPT.
+///
+/// Surfaces a missing or undersized protective entry, and hybrid-MBR partitions
+/// that match no GPT partition (legacy-visible, GPT-invisible). Reads LBA 0
+/// directly — no dependency on a full MBR parser — so standalone gpt-forensic
+/// consumers get the cross-examination too.
+fn reconcile_mbr<R: Read + Seek>(
+    reader: &mut R,
+    partitions: &[GptEntry],
+    disk_size_bytes: u64,
+    anomalies: &mut Vec<Anomaly>,
+) {
+    let Ok(sector) = read_sector(reader, 0) else {
+        return; // no readable MBR to reconcile against
+    };
+    let mbr = crate::mbr::parse_mbr_entries(&sector);
+    let active: Vec<_> = mbr.iter().filter(|e| !e.is_empty()).collect();
+
+    match active.iter().find(|e| e.is_protective()) {
+        None => record(anomalies, AnomalyKind::MissingProtectiveMbr),
+        Some(p) if disk_size_bytes > 0 && p.lba_count != u32::MAX => {
+            let disk_last_lba = (disk_size_bytes / SECTOR).saturating_sub(1);
+            let covered_last_lba = p.lba_end();
+            if disk_last_lba.saturating_sub(covered_last_lba) > PROTECTIVE_UNDERSIZE_TOLERANCE {
+                record(
+                    anomalies,
+                    AnomalyKind::ProtectiveMbrUndersized {
+                        covered_last_lba,
+                        disk_last_lba,
+                    },
+                );
+            }
+        }
+        Some(_) => {}
+    }
+
+    // Hybrid entries (non-protective) that overlap no GPT partition are hidden.
+    for e in active.iter().filter(|e| !e.is_protective()) {
+        let (start, end) = (u64::from(e.lba_start), e.lba_end());
+        let overlaps_gpt = partitions
+            .iter()
+            .any(|g| start <= g.last_lba && g.first_lba <= end);
+        if !overlaps_gpt {
+            record(
+                anomalies,
+                AnomalyKind::HybridMbrHiddenPartition {
+                    mbr_index: e.index,
+                    lba_start: e.lba_start,
+                    lba_count: e.lba_count,
+                },
+            );
+        }
+    }
 }
 
 /// Flag overlapping partition extents.
