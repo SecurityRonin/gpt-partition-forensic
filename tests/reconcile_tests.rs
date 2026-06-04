@@ -133,6 +133,19 @@ fn hybrid_hidden_partition_flagged() {
 }
 
 #[test]
+fn partition_before_first_usable_flagged() {
+    // A GPT partition at LBA 2 sits on the entry-array region (first_usable=34).
+    let k = kinds(build(
+        &[(0, PROTECTIVE_TYPE, 1, (SECTORS - 1) as u32)],
+        &[(2, 30)],
+    ));
+    assert!(
+        k.iter().any(|a| matches!(a, AnomalyKind::PartitionOverlapsGptArea { .. })),
+        "got {k:?}"
+    );
+}
+
+#[test]
 fn hybrid_entry_overlapping_gpt_not_hidden() {
     // 0xEE + a hybrid entry that overlaps the GPT partition → not "hidden".
     let k = kinds(build(
