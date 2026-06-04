@@ -13,6 +13,7 @@
 
 pub mod collision;
 pub mod crc32;
+pub mod entropy;
 pub mod entry;
 pub mod findings;
 pub mod guid;
