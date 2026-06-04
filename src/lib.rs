@@ -13,10 +13,15 @@
 
 pub mod crc32;
 pub mod entry;
+pub mod findings;
 pub mod guid;
 pub mod header;
 
+mod analyse;
+
+pub use analyse::analyse;
 pub use entry::GptEntry;
+pub use findings::{Anomaly, AnomalyKind, GptAnalysis, Location, Severity};
 pub use guid::Guid;
 pub use header::GptHeader;
 
