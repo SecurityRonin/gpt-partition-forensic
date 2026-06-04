@@ -209,6 +209,26 @@ fn trailing_space_after_backup_gpt_flagged() {
 }
 
 #[test]
+fn high_entropy_partition_flagged_as_hidden_volume() {
+    // Fill partition 0's first sector (LBA 34) with a full byte ramp → entropy ~8.
+    // It is typed EFI System (not an encrypted type), so opaque high-entropy
+    // content is consistent with a hidden encrypted container.
+    let mut disk = build_gpt_disk();
+    let off = 34 * 512;
+    for (i, b) in disk[off..off + 512].iter_mut().enumerate() {
+        *b = (i % 256) as u8;
+    }
+    let a = analyse(&mut Cursor::new(disk), SECTORS * 512).unwrap();
+    assert!(
+        a.anomalies
+            .iter()
+            .any(|x| matches!(x.kind, AnomalyKind::HiddenEncryptedVolume { index: 0, .. })),
+        "got: {:?}",
+        a.anomalies.iter().map(|x| x.code).collect::<Vec<_>>()
+    );
+}
+
+#[test]
 fn overlapping_partitions_flagged() {
     // Rebuild with overlapping entries and matching CRCs.
     let mut disk = vec![0u8; (SECTORS * 512) as usize];
