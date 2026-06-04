@@ -1,5 +1,6 @@
 //! `gpt dump` — annotated hex (or raw bytes) of one 512-byte LBA.
 
+use std::fmt::Write as _;
 use std::io::{Read, Seek, SeekFrom};
 
 use gpt_forensic::Error;
@@ -20,7 +21,7 @@ pub fn run<R: Read + Seek>(reader: &mut R, lba: u64) -> Result<String, Error> {
     let offset = lba * SECTOR;
 
     let mut out = String::new();
-    out.push_str(&format!("LBA {lba}  (offset 0x{offset:08X})  512 bytes\n"));
+    writeln!(out, "LBA {lba}  (offset 0x{offset:08X})  512 bytes").unwrap();
     out.push_str(&"-".repeat(80));
     out.push('\n');
 
@@ -34,7 +35,7 @@ pub fn run<R: Read + Seek>(reader: &mut R, lba: u64) -> Result<String, Error> {
             .iter()
             .map(|b| if (0x20..=0x7E).contains(b) { *b as char } else { '.' })
             .collect();
-        out.push_str(&format!("{addr:08X}  {left:<23}  {right:<23}  | {ascii:<16} |\n"));
+        writeln!(out, "{addr:08X}  {left:<23}  {right:<23}  | {ascii:<16} |").unwrap();
     }
     Ok(out)
 }
