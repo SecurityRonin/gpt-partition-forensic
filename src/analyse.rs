@@ -241,6 +241,10 @@ fn check_encrypted_volumes<R: Read + Seek>(
         let Ok(sector) = read_sector(reader, p.first_lba) else {
             continue;
         };
+        // A recognized filesystem magic means it is not an opaque encrypted blob.
+        if forensicnomicon::filesystems::detect_name(&sector).is_some() {
+            continue;
+        }
         let entropy = crate::entropy::shannon(&sector);
         if entropy > crate::entropy::HIGH_ENTROPY_THRESHOLD {
             record(anomalies, AnomalyKind::HiddenEncryptedVolume { index, entropy });
