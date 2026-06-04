@@ -194,6 +194,21 @@ fn primary_backup_array_content_divergence_flagged() {
 }
 
 #[test]
+fn trailing_space_after_backup_gpt_flagged() {
+    // The backup GPT sits at LBA 8191, but we tell analyse the disk is larger —
+    // the tail past the backup GPT is space hidden from GPT-aware tooling.
+    let disk = build_gpt_disk();
+    let a = analyse(&mut Cursor::new(disk), 9000 * 512).unwrap();
+    assert!(
+        a.anomalies
+            .iter()
+            .any(|x| matches!(x.kind, AnomalyKind::BackupGptNotAtDiskEnd { .. })),
+        "got: {:?}",
+        a.anomalies.iter().map(|x| x.code).collect::<Vec<_>>()
+    );
+}
+
+#[test]
 fn overlapping_partitions_flagged() {
     // Rebuild with overlapping entries and matching CRCs.
     let mut disk = vec![0u8; (SECTORS * 512) as usize];
