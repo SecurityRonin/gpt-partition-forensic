@@ -273,6 +273,19 @@ fn primary_header_lba_mismatch_flagged() {
 }
 
 #[test]
+fn exposes_gpt_evidence_hash() {
+    // SHA-256 over the primary header sector + the primary entry array — a
+    // tamper-evident fingerprint of the partition table for chain-of-custody.
+    let disk = build_gpt_disk();
+    let mut buf = disk[512..1024].to_vec();
+    buf.extend_from_slice(&disk[1024..1024 + (NUM as usize) * (ESIZE as usize)]);
+    let expected = gpt_forensic::sha256::hex(&gpt_forensic::sha256::digest(&buf));
+
+    let a = analyse(&mut Cursor::new(build_gpt_disk()), SECTORS * 512).unwrap();
+    assert_eq!(a.gpt_sha256, expected);
+}
+
+#[test]
 fn overlapping_partitions_flagged() {
     // Rebuild with overlapping entries and matching CRCs.
     let mut disk = vec![0u8; (SECTORS * 512) as usize];
