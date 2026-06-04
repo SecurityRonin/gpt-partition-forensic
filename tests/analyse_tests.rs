@@ -286,6 +286,22 @@ fn exposes_gpt_evidence_hash() {
 }
 
 #[test]
+fn header_slack_data_flagged() {
+    // The GPT header LBA must be zero past header_size (92), and that region is
+    // NOT covered by the header CRC — a CRC-invisible place to hide data.
+    let mut disk = build_gpt_disk();
+    disk[512 + 100] = 0x41; // non-zero byte in the primary header's reserved slack
+    let k = kinds(&disk);
+    assert!(
+        k.iter().any(|a| matches!(
+            a,
+            AnomalyKind::HeaderSlackData { location: Location::Primary }
+        )),
+        "got {k:?}"
+    );
+}
+
+#[test]
 fn overlapping_partitions_flagged() {
     // Rebuild with overlapping entries and matching CRCs.
     let mut disk = vec![0u8; (SECTORS * 512) as usize];
