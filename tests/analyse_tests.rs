@@ -174,6 +174,24 @@ fn primary_backup_divergence_flagged() {
 }
 
 #[test]
+fn primary_backup_array_content_divergence_flagged() {
+    // Tamper a byte of the backup entry array → its contents differ from the
+    // primary's, independent of the CRC-field comparison.
+    let mut disk = build_gpt_disk();
+    let backup_array_lba = SECTORS - 1 - ARRAY_SECTORS;
+    let off = (backup_array_lba * 512) as usize;
+    disk[off + 40] ^= 0xFF;
+    let k = kinds(&disk);
+    assert!(
+        k.iter().any(|a| matches!(
+            a,
+            AnomalyKind::PrimaryBackupDivergence { field } if field.contains("array contents")
+        )),
+        "got {k:?}"
+    );
+}
+
+#[test]
 fn overlapping_partitions_flagged() {
     // Rebuild with overlapping entries and matching CRCs.
     let mut disk = vec![0u8; (SECTORS * 512) as usize];
