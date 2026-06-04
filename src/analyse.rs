@@ -101,6 +101,11 @@ pub fn analyse<R: Read + Seek>(reader: &mut R, disk_size_bytes: u64) -> Result<G
     // ── MBR ↔ GPT reconciliation (standalone — reads LBA 0 itself) ──────────
     reconcile_mbr(reader, &partitions, disk_size_bytes, sector_size, &mut anomalies);
 
+    // Tamper-evident fingerprint of the partition table (header + entry array).
+    let mut evidence = primary_sector.to_vec();
+    evidence.extend_from_slice(&primary_array);
+    let gpt_sha256 = crate::sha256::hex(&crate::sha256::digest(&evidence));
+
     let disk_guid = primary.disk_guid;
     Ok(GptAnalysis {
         primary,
@@ -108,6 +113,7 @@ pub fn analyse<R: Read + Seek>(reader: &mut R, disk_size_bytes: u64) -> Result<G
         disk_guid,
         partitions,
         sector_size,
+        gpt_sha256,
         anomalies,
     })
 }

@@ -282,6 +282,9 @@ pub struct GptAnalysis {
     pub partitions: Vec<GptEntry>,
     /// Logical sector size auto-detected from the GPT header location (512 or 4096).
     pub sector_size: u64,
+    /// SHA-256 (hex) of the primary GPT header sector + entry array — a
+    /// tamper-evident fingerprint of the partition table for chain-of-custody.
+    pub gpt_sha256: String,
     /// All detected anomalies, in discovery order.
     pub anomalies: Vec<Anomaly>,
 }
