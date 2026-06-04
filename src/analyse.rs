@@ -92,12 +92,10 @@ fn read_backup<R: Read + Seek>(
     primary: &GptHeader,
     anomalies: &mut Vec<Anomaly>,
 ) -> Option<GptHeader> {
-    let backup = match read_sector(reader, primary.alternate_lba).map(|s| GptHeader::parse(&s)) {
-        Ok(Ok(h)) => h,
-        _ => {
-            record(anomalies, AnomalyKind::BackupGptUnreadable);
-            return None;
-        }
+    let Ok(Ok(backup)) = read_sector(reader, primary.alternate_lba).map(|s| GptHeader::parse(&s))
+    else {
+        record(anomalies, AnomalyKind::BackupGptUnreadable);
+        return None;
     };
 
     if !backup.header_crc_valid {

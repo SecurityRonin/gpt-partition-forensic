@@ -15,7 +15,7 @@ const POLY: u32 = 0xEDB8_8320;
 pub fn checksum(data: &[u8]) -> u32 {
     let mut crc: u32 = 0xFFFF_FFFF;
     for &byte in data {
-        crc ^= byte as u32;
+        crc ^= u32::from(byte);
         for _ in 0..8 {
             // Branchless reflected step: subtract the polynomial when the low
             // bit is set after shifting right.

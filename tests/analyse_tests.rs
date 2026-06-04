@@ -1,3 +1,4 @@
+#![allow(clippy::similar_names)] // baoff/bhoff offset locals
 //! End-to-end GPT analysis: CRC integrity, primary/backup divergence, overlaps.
 
 use gpt_forensic::{analyse, crc32::checksum, findings::AnomalyKind, Location};
