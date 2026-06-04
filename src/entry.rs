@@ -69,6 +69,13 @@ impl GptEntry {
     pub fn is_used(&self) -> bool {
         !self.type_guid.is_zero()
     }
+
+    /// Human-readable name for this partition's type GUID, from the
+    /// `forensicnomicon` knowledge base. `None` for an unrecognised type.
+    #[must_use]
+    pub fn type_name(&self) -> Option<&'static str> {
+        forensicnomicon::gpt::type_name(&self.type_guid.to_string())
+    }
 }
 
 /// Decode a UTF-16LE name field, stopping at the first NUL code unit.
