@@ -34,6 +34,16 @@ pub fn analyse<R: Read + Seek>(reader: &mut R, disk_size_bytes: u64) -> Result<G
     if !primary.header_crc_valid {
         record(&mut anomalies, AnomalyKind::HeaderCrcInvalid { location: Location::Primary });
     }
+    if primary.my_lba != 1 {
+        record(
+            &mut anomalies,
+            AnomalyKind::HeaderLbaMismatch {
+                location: Location::Primary,
+                claimed: primary.my_lba,
+                actual: 1,
+            },
+        );
+    }
 
     let primary_array = read_entry_array(reader, &primary)?;
     if crc32::checksum(&primary_array) != primary.partition_array_crc32 {
@@ -127,6 +137,16 @@ fn read_backup<R: Read + Seek>(
 
     if !backup.header_crc_valid {
         record(anomalies, AnomalyKind::HeaderCrcInvalid { location: Location::Backup });
+    }
+    if backup.my_lba != primary.alternate_lba {
+        record(
+            anomalies,
+            AnomalyKind::HeaderLbaMismatch {
+                location: Location::Backup,
+                claimed: backup.my_lba,
+                actual: primary.alternate_lba,
+            },
+        );
     }
     if let Ok(arr) = read_entry_array(reader, &backup) {
         if crc32::checksum(&arr) != backup.partition_array_crc32 {

@@ -58,6 +58,13 @@ impl fmt::Display for Severity {
 pub enum AnomalyKind {
     /// A GPT header's self-CRC does not match its contents.
     HeaderCrcInvalid { location: Location },
+    /// A GPT header's `my_lba` field disagrees with the LBA it was actually read
+    /// from — a relocated or forged header.
+    HeaderLbaMismatch {
+        location: Location,
+        claimed: u64,
+        actual: u64,
+    },
     /// A partition entry array's CRC does not match the header's stored value.
     PartitionArrayCrcInvalid { location: Location },
     /// The backup GPT is missing or unreadable.
@@ -117,6 +124,7 @@ impl AnomalyKind {
         match self {
             K::OverlappingPartitions { .. } => Severity::Critical,
             K::HeaderCrcInvalid { .. }
+            | K::HeaderLbaMismatch { .. }
             | K::PartitionArrayCrcInvalid { .. }
             | K::BackupGptUnreadable
             | K::BackupGptNotAtDiskEnd { .. }
@@ -137,6 +145,7 @@ impl AnomalyKind {
         use AnomalyKind as K;
         match self {
             K::HeaderCrcInvalid { .. } => "GPT-HDR-CRC",
+            K::HeaderLbaMismatch { .. } => "GPT-HDR-LBA",
             K::PartitionArrayCrcInvalid { .. } => "GPT-ARRAY-CRC",
             K::BackupGptUnreadable => "GPT-BACKUP-MISSING",
             K::BackupGptNotAtDiskEnd { .. } => "GPT-BACKUP-NOTATEND",
@@ -160,6 +169,14 @@ impl AnomalyKind {
             K::HeaderCrcInvalid { location } => {
                 format!("{location} GPT header CRC is invalid — corruption or tampering")
             }
+            K::HeaderLbaMismatch {
+                location,
+                claimed,
+                actual,
+            } => format!(
+                "{location} GPT header claims my_lba {claimed} but was read at LBA {actual} — \
+                 relocated or forged header"
+            ),
             K::PartitionArrayCrcInvalid { location } => {
                 format!("{location} GPT partition-array CRC is invalid — corruption or tampering")
             }
