@@ -15,7 +15,9 @@ const ESP_TYPE: [u8; 16] = [
 fn entry_bytes(type_guid: [u8; 16], first: u64, last: u64, name: &str) -> [u8; 128] {
     let mut e = [0u8; 128];
     e[0..16].copy_from_slice(&type_guid);
-    e[16..32].copy_from_slice(&[0x22; 16]);
+    // Unique GUID derived from `first` so each entry's is distinct.
+    e[16..24].copy_from_slice(&first.to_le_bytes());
+    e[24] = 0x22;
     e[32..40].copy_from_slice(&first.to_le_bytes());
     e[40..48].copy_from_slice(&last.to_le_bytes());
     for (i, u) in name.encode_utf16().enumerate() {

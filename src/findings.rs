@@ -65,6 +65,8 @@ pub enum AnomalyKind {
     PrimaryBackupDivergence { field: &'static str },
     /// Two partitions claim overlapping LBA ranges.
     OverlappingPartitions { a: usize, b: usize },
+    /// Two partition entries share a unique GUID — a cloned/duplicated entry.
+    DuplicatePartitionGuid { a: usize, b: usize },
     /// A partition extends outside the header's usable LBA range.
     PartitionOutOfBounds {
         index: usize,
@@ -103,7 +105,8 @@ impl AnomalyKind {
             | K::PartitionOutOfBounds { .. }
             | K::MissingProtectiveMbr
             | K::ProtectiveMbrUndersized { .. }
-            | K::HybridMbrHiddenPartition { .. } => Severity::High,
+            | K::HybridMbrHiddenPartition { .. }
+            | K::DuplicatePartitionGuid { .. } => Severity::High,
         }
     }
 
@@ -117,6 +120,7 @@ impl AnomalyKind {
             K::BackupGptUnreadable => "GPT-BACKUP-MISSING",
             K::PrimaryBackupDivergence { .. } => "GPT-DIVERGENCE",
             K::OverlappingPartitions { .. } => "GPT-PART-OVERLAP",
+            K::DuplicatePartitionGuid { .. } => "GPT-PART-DUPGUID",
             K::PartitionOutOfBounds { .. } => "GPT-PART-OOB",
             K::MissingProtectiveMbr => "GPT-MBR-NOPROT",
             K::ProtectiveMbrUndersized { .. } => "GPT-MBR-UNDERSIZED",
@@ -143,6 +147,9 @@ impl AnomalyKind {
             }
             K::OverlappingPartitions { a, b } => {
                 format!("Partitions {a} and {b} claim overlapping LBA ranges")
+            }
+            K::DuplicatePartitionGuid { a, b } => {
+                format!("Partitions {a} and {b} share a unique GUID — cloned/duplicated entry")
             }
             K::PartitionOutOfBounds {
                 index,

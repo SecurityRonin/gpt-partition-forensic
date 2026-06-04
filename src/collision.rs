@@ -5,6 +5,11 @@
 //! — the GPT analogue of the NT disk-signature collision in `mbr-forensic`. This
 //! is a cross-disk utility: a caller analyses several images and passes their
 //! disk GUIDs in.
+//!
+//! It also provides [`find_duplicate_partition_guids`] for the intra-disk case:
+//! two partition entries sharing one unique GUID (a cloned/duplicated entry).
+
+use crate::entry::GptEntry;
 
 /// A set of disks that share one (non-zero) GPT disk GUID.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -47,4 +52,23 @@ pub fn find_disk_guid_collisions(guids: &[&str]) -> Vec<GuidCollision> {
             (members.len() >= 2).then_some(GuidCollision { guid, members })
         })
         .collect()
+}
+
+/// Find pairs of partition entries that share a unique GUID — a duplicated or
+/// cloned entry within a single disk. Returns each colliding `(a, b)` index pair
+/// once, with `a < b`, in ascending order. The all-zero unique GUID is ignored.
+#[must_use]
+pub fn find_duplicate_partition_guids(entries: &[GptEntry]) -> Vec<(usize, usize)> {
+    let mut out = Vec::new();
+    for a in 0..entries.len() {
+        if entries[a].unique_guid.is_zero() {
+            continue;
+        }
+        for b in (a + 1)..entries.len() {
+            if entries[a].unique_guid == entries[b].unique_guid {
+                out.push((a, b));
+            }
+        }
+    }
+    out
 }

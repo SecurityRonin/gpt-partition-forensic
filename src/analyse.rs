@@ -52,6 +52,10 @@ pub fn analyse<R: Read + Seek>(reader: &mut R, disk_size_bytes: u64) -> Result<G
     check_overlaps(&partitions, &mut anomalies);
     check_bounds(&partitions, primary.last_usable_lba, &mut anomalies);
 
+    for (a, b) in crate::collision::find_duplicate_partition_guids(&partitions) {
+        record(&mut anomalies, AnomalyKind::DuplicatePartitionGuid { a, b });
+    }
+
     // ── MBR ↔ GPT reconciliation (standalone — reads LBA 0 itself) ──────────
     reconcile_mbr(reader, &partitions, disk_size_bytes, &mut anomalies);
 
