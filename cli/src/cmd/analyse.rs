@@ -36,6 +36,8 @@ pub fn run<R: Read + Seek>(reader: &mut R, disk_size: u64, image_name: &str) -> 
         a.primary.first_usable_lba, a.primary.last_usable_lba
     )
     .unwrap();
+    writeln!(out, "Sector size:     {} bytes", a.sector_size).unwrap();
+    writeln!(out, "GPT SHA-256:     {}", a.gpt_sha256).unwrap();
     match &a.backup {
         Some(b) => writeln!(out, "Backup GPT:      present (LBA {})", b.my_lba).unwrap(),
         None => out.push_str("Backup GPT:      MISSING\n"),
