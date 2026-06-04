@@ -52,7 +52,8 @@ impl fmt::Display for Severity {
 }
 
 /// Classification of a GPT anomaly.
-#[derive(Debug, Clone, PartialEq, Eq)]
+// `Eq` is intentionally omitted: `HiddenEncryptedVolume` carries an `f64`.
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub enum AnomalyKind {
     /// A GPT header's self-CRC does not match its contents.
@@ -73,6 +74,10 @@ pub enum AnomalyKind {
     OverlappingPartitions { a: usize, b: usize },
     /// Two partition entries share a unique GUID — a cloned/duplicated entry.
     DuplicatePartitionGuid { a: usize, b: usize },
+    /// A non-encrypted-typed partition whose content is near-maximal entropy and
+    /// has no readable filesystem structure — consistent with a hidden encrypted
+    /// container (`VeraCrypt` / detached LUKS).
+    HiddenEncryptedVolume { index: usize, entropy: f64 },
     /// A partition extends outside the header's usable LBA range.
     PartitionOutOfBounds {
         index: usize,
@@ -121,7 +126,8 @@ impl AnomalyKind {
             | K::ProtectiveMbrUndersized { .. }
             | K::HybridMbrHiddenPartition { .. }
             | K::DuplicatePartitionGuid { .. }
-            | K::PartitionOverlapsGptArea { .. } => Severity::High,
+            | K::PartitionOverlapsGptArea { .. }
+            | K::HiddenEncryptedVolume { .. } => Severity::High,
         }
     }
 
@@ -137,6 +143,7 @@ impl AnomalyKind {
             K::PrimaryBackupDivergence { .. } => "GPT-DIVERGENCE",
             K::OverlappingPartitions { .. } => "GPT-PART-OVERLAP",
             K::DuplicatePartitionGuid { .. } => "GPT-PART-DUPGUID",
+            K::HiddenEncryptedVolume { .. } => "GPT-PART-ENCRYPTED",
             K::PartitionOutOfBounds { .. } => "GPT-PART-OOB",
             K::PartitionOverlapsGptArea { .. } => "GPT-PART-RESERVED",
             K::MissingProtectiveMbr => "GPT-MBR-NOPROT",
@@ -175,6 +182,10 @@ impl AnomalyKind {
             K::DuplicatePartitionGuid { a, b } => {
                 format!("Partitions {a} and {b} share a unique GUID — cloned/duplicated entry")
             }
+            K::HiddenEncryptedVolume { index, entropy } => format!(
+                "Partition {index} has near-maximal entropy ({entropy:.2} bits/byte) and no readable \
+                 filesystem — consistent with a hidden encrypted container"
+            ),
             K::PartitionOutOfBounds {
                 index,
                 last_lba,

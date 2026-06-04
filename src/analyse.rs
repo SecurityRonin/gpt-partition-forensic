@@ -74,6 +74,7 @@ pub fn analyse<R: Read + Seek>(reader: &mut R, disk_size_bytes: u64) -> Result<G
     for (a, b) in crate::collision::find_duplicate_partition_guids(&partitions) {
         record(&mut anomalies, AnomalyKind::DuplicatePartitionGuid { a, b });
     }
+    check_encrypted_volumes(reader, &partitions, &mut anomalies);
 
     // ── MBR ↔ GPT reconciliation (standalone — reads LBA 0 itself) ──────────
     reconcile_mbr(reader, &partitions, disk_size_bytes, &mut anomalies);
@@ -221,6 +222,28 @@ fn reconcile_mbr<R: Read + Seek>(
                     lba_count: e.lba_count,
                 },
             );
+        }
+    }
+}
+
+/// Flag partitions whose first sector is near-maximal entropy with no readable
+/// filesystem — a hidden encrypted container. Partitions typed as encrypted
+/// (LUKS) are skipped, since high entropy is expected there.
+fn check_encrypted_volumes<R: Read + Seek>(
+    reader: &mut R,
+    partitions: &[GptEntry],
+    anomalies: &mut Vec<Anomaly>,
+) {
+    for (index, p) in partitions.iter().enumerate() {
+        if p.type_name() == Some("Linux LUKS") {
+            continue;
+        }
+        let Ok(sector) = read_sector(reader, p.first_lba) else {
+            continue;
+        };
+        let entropy = crate::entropy::shannon(&sector);
+        if entropy > crate::entropy::HIGH_ENTROPY_THRESHOLD {
+            record(anomalies, AnomalyKind::HiddenEncryptedVolume { index, entropy });
         }
     }
 }

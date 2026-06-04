@@ -4,12 +4,12 @@ use gpt_forensic::entropy::shannon;
 
 #[test]
 fn all_zero_is_zero() {
-    assert_eq!(shannon(&[0u8; 64]), 0.0);
+    assert!(shannon(&[0u8; 64]).abs() < 1e-12);
 }
 
 #[test]
 fn empty_is_zero() {
-    assert_eq!(shannon(&[]), 0.0);
+    assert!(shannon(&[]).abs() < 1e-12);
 }
 
 #[test]

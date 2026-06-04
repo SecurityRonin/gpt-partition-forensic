@@ -2,7 +2,7 @@
 //!
 //! Used to spot **hidden encrypted volumes**: a partition whose content is
 //! near-maximal entropy (≈ 8 bits/byte) with no readable filesystem structure is
-//! consistent with an encrypted container (VeraCrypt / detached LUKS).
+//! consistent with an encrypted container (`VeraCrypt` / detached LUKS).
 
 /// Entropy (bits/byte) above which a region is treated as encrypted/random
 /// rather than a structured filesystem.
@@ -12,6 +12,7 @@ pub const HIGH_ENTROPY_THRESHOLD: f64 = 7.0;
 ///
 /// Returns `0.0` for an empty slice.
 #[must_use]
+#[allow(clippy::cast_precision_loss)] // counts/len fit f64 exactly for realistic inputs
 pub fn shannon(data: &[u8]) -> f64 {
     if data.is_empty() {
         return 0.0;
