@@ -16,6 +16,7 @@ pub mod entry;
 pub mod findings;
 pub mod guid;
 pub mod header;
+pub mod mbr;
 
 mod analyse;
 
