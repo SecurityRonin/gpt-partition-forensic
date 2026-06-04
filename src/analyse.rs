@@ -46,7 +46,7 @@ pub fn analyse<R: Read + Seek>(reader: &mut R, disk_size_bytes: u64) -> Result<G
         parse_entry_array(&primary_array, primary.num_partition_entries, primary.partition_entry_size);
 
     // ── Backup header + entry array, reconciled with the primary ────────────
-    let backup = read_backup(reader, &primary, &mut anomalies);
+    let backup = read_backup(reader, &primary, &primary_array, &mut anomalies);
 
     // ── Partition geometry checks ───────────────────────────────────────────
     check_overlaps(&partitions, &mut anomalies);
@@ -92,6 +92,7 @@ fn read_entry_array<R: Read + Seek>(reader: &mut R, h: &GptHeader) -> Result<Vec
 fn read_backup<R: Read + Seek>(
     reader: &mut R,
     primary: &GptHeader,
+    primary_array: &[u8],
     anomalies: &mut Vec<Anomaly>,
 ) -> Option<GptHeader> {
     let Ok(Ok(backup)) = read_sector(reader, primary.alternate_lba).map(|s| GptHeader::parse(&s))
@@ -108,6 +109,16 @@ fn read_backup<R: Read + Seek>(
             record(
                 anomalies,
                 AnomalyKind::PartitionArrayCrcInvalid { location: Location::Backup },
+            );
+        }
+        // Byte-compare the two entry arrays directly: this catches tampering even
+        // when the CRC *fields* were forged to match.
+        if arr != primary_array {
+            record(
+                anomalies,
+                AnomalyKind::PrimaryBackupDivergence {
+                    field: "entry array contents",
+                },
             );
         }
     }
