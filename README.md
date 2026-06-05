@@ -84,6 +84,13 @@ cross-MBR↔GPT reconciliation is available whether you start from the MBR or th
 - **`#![forbid(unsafe_code)]`**, fuzz-tested (`cargo fuzz`), and validated against real disk images, not only synthetic fixtures.
 - **Secure by default** — the zero-config `analyse()` path performs every integrity check; you cannot accidentally skip CRC validation.
 
+## Sibling crates
+
+One forensic parser per partitioning scheme — each a pure `Read + Seek` library that composes with the same container crates:
+
+- [`mbr-forensic`](https://github.com/SecurityRonin/mbr-forensic) — Master Boot Record (legacy BIOS partitioning; auto-delegates here for protective-MBR/GPT disks)
+- [`apm-forensic`](https://github.com/SecurityRonin/apm-forensic) — Apple Partition Map (classic Mac and hybrid optical media)
+
 ---
 
 [Privacy Policy](https://securityronin.github.io/gpt-forensic/privacy/) · [Terms of Service](https://securityronin.github.io/gpt-forensic/terms/) · © 2026 Security Ronin Ltd
