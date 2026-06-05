@@ -10,13 +10,18 @@
 
 ## See it work in 30 seconds
 
-```console
-$ cargo install gpt-forensic-cli
-$ gpt analyse disk.img
+```rust
+use gpt_forensic::{analyse, report::text_report};
+use std::fs::File;
+
+let mut img = File::open("disk.img")?;
+let size = img.metadata()?.len();
+print!("{}", text_report(&analyse(&mut img, size)?));
+# Ok::<(), gpt_forensic::Error>(())
 ```
 
 ```text
-GPT Forensic Analysis: disk.img
+GPT Forensic Analysis
 ================================================================================
 Disk GUID:       E86E657A-D840-4C09-AFE3-A1A5F665CF44
 Revision:        1.0
@@ -37,6 +42,11 @@ Anomalies:       none
 ================================================================================
 Result:          clean (no anomalies detected)
 ```
+
+`gpt-forensic` is a **library**. For a ready-made command line that auto-detects
+the partitioning scheme and prints this for *any* disk, install the unified
+[`disk4n6`](https://github.com/SecurityRonin/disk-forensic) tool
+(`cargo install disk-forensic`).
 
 A tampered disk does not stay quiet — a flipped byte in the partition array, a
 backup GPT that disagrees with the primary, or two partitions claiming the same
