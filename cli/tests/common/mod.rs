@@ -21,6 +21,9 @@ pub const SECTORS: usize = 64;
 pub const DISK_GUID: &str = "12345678-1234-5678-1234-567812345678";
 pub const LINUX_GUID: &str = "0FC63DAF-8483-4772-8E79-3D69D8477DE4";
 pub const EFI_GUID: &str = "C12A7328-F81F-11D2-BA4B-00A0C93EC93B";
+/// A syntactically valid type GUID with no entry in the known-types table, used
+/// to exercise the CLI's raw-GUID fallback rendering.
+pub const UNKNOWN_GUID: &str = "DEADBEEF-1111-2222-3333-444455556666";
 
 /// Encode a canonical GUID string into its 16-byte GPT on-disk (mixed-endian)
 /// form: groups 1–3 little-endian, groups 4–5 big-endian.
@@ -120,6 +123,34 @@ pub fn build_gpt() -> Vec<u8> {
     let primary = header(1, 63, 2, 3, 61, 4, 128, array_crc);
     let backup = header(63, 1, 62, 3, 61, 4, 128, array_crc);
 
+    disk[SECTOR..SECTOR + 512].copy_from_slice(&primary);
+    disk[2 * SECTOR..2 * SECTOR + array.len()].copy_from_slice(&array);
+    disk[62 * SECTOR..62 * SECTOR + array.len()].copy_from_slice(&array);
+    disk[63 * SECTOR..63 * SECTOR + 512].copy_from_slice(&backup);
+    disk
+}
+
+/// Build a clean GPT image whose single partition uses a type GUID with no
+/// known name, exercising the CLI's raw-GUID fallback rendering.
+pub fn build_gpt_unknown_type() -> Vec<u8> {
+    let mut disk = vec![0u8; SECTOR * SECTORS];
+    disk[450] = 0xEE;
+    disk[454..458].copy_from_slice(&1u32.to_le_bytes());
+    disk[458..462].copy_from_slice(&((SECTORS - 1) as u32).to_le_bytes());
+    disk[510] = 0x55;
+    disk[511] = 0xAA;
+
+    let mut array = vec![0u8; 4 * 128];
+    array[0..128].copy_from_slice(&entry(
+        UNKNOWN_GUID,
+        "00000000-0000-0000-0000-0000000000AA",
+        3,
+        30,
+        "Mystery",
+    ));
+    let array_crc = gpt_forensic::crc32::checksum(&array);
+    let primary = header(1, 63, 2, 3, 61, 4, 128, array_crc);
+    let backup = header(63, 1, 62, 3, 61, 4, 128, array_crc);
     disk[SECTOR..SECTOR + 512].copy_from_slice(&primary);
     disk[2 * SECTOR..2 * SECTOR + array.len()].copy_from_slice(&array);
     disk[62 * SECTOR..62 * SECTOR + array.len()].copy_from_slice(&array);

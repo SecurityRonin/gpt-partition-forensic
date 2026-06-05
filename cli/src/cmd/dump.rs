@@ -33,7 +33,13 @@ pub fn run<R: Read + Seek>(reader: &mut R, lba: u64) -> Result<String, Error> {
         // Printable ASCII (0x20..=0x7E) verbatim; everything else as '.'.
         let ascii: String = chunk
             .iter()
-            .map(|b| if (0x20..=0x7E).contains(b) { *b as char } else { '.' })
+            .map(|b| {
+                if (0x20..=0x7E).contains(b) {
+                    *b as char
+                } else {
+                    '.'
+                }
+            })
             .collect();
         writeln!(out, "{addr:08X}  {left:<23}  {right:<23}  | {ascii:<16} |").unwrap();
     }

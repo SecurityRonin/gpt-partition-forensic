@@ -77,9 +77,19 @@ fn analyse_inner<R: Read + Seek>(
     let primary_sector = read_sector(reader, 1, sector_size)?;
     let primary = GptHeader::parse(&primary_sector)?;
     if !primary.header_crc_valid {
-        record(&mut anomalies, AnomalyKind::HeaderCrcInvalid { location: Location::Primary });
+        record(
+            &mut anomalies,
+            AnomalyKind::HeaderCrcInvalid {
+                location: Location::Primary,
+            },
+        );
     }
-    check_header_slack(&primary_sector, primary.header_size, Location::Primary, &mut anomalies);
+    check_header_slack(
+        &primary_sector,
+        primary.header_size,
+        Location::Primary,
+        &mut anomalies,
+    );
     if primary.my_lba != 1 {
         record(
             &mut anomalies,
@@ -95,14 +105,25 @@ fn analyse_inner<R: Read + Seek>(
     if crc32::checksum(&primary_array) != primary.partition_array_crc32 {
         record(
             &mut anomalies,
-            AnomalyKind::PartitionArrayCrcInvalid { location: Location::Primary },
+            AnomalyKind::PartitionArrayCrcInvalid {
+                location: Location::Primary,
+            },
         );
     }
-    let partitions =
-        parse_entry_array(&primary_array, primary.num_partition_entries, primary.partition_entry_size);
+    let partitions = parse_entry_array(
+        &primary_array,
+        primary.num_partition_entries,
+        primary.partition_entry_size,
+    );
 
     // ── Backup header + entry array, reconciled with the primary ────────────
-    let backup = read_backup(reader, &primary, &primary_array, sector_size, &mut anomalies);
+    let backup = read_backup(
+        reader,
+        &primary,
+        &primary_array,
+        sector_size,
+        &mut anomalies,
+    );
 
     // The backup GPT should sit at the last LBA; anything past it is hidden.
     if disk_size_bytes > 0 {
@@ -133,7 +154,13 @@ fn analyse_inner<R: Read + Seek>(
     check_encrypted_volumes(reader, &partitions, sector_size, &mut anomalies);
 
     // ── MBR ↔ GPT reconciliation (standalone — reads LBA 0 itself) ──────────
-    reconcile_mbr(reader, &partitions, disk_size_bytes, sector_size, &mut anomalies);
+    reconcile_mbr(
+        reader,
+        &partitions,
+        disk_size_bytes,
+        sector_size,
+        &mut anomalies,
+    );
 
     // Tamper-evident fingerprint of the partition table (header + entry array).
     let mut evidence = primary_sector.to_vec();
@@ -217,9 +244,19 @@ fn read_backup<R: Read + Seek>(
     };
 
     if !backup.header_crc_valid {
-        record(anomalies, AnomalyKind::HeaderCrcInvalid { location: Location::Backup });
+        record(
+            anomalies,
+            AnomalyKind::HeaderCrcInvalid {
+                location: Location::Backup,
+            },
+        );
     }
-    check_header_slack(&backup_sector, backup.header_size, Location::Backup, anomalies);
+    check_header_slack(
+        &backup_sector,
+        backup.header_size,
+        Location::Backup,
+        anomalies,
+    );
     if backup.my_lba != primary.alternate_lba {
         record(
             anomalies,
@@ -234,7 +271,9 @@ fn read_backup<R: Read + Seek>(
         if crc32::checksum(&arr) != backup.partition_array_crc32 {
             record(
                 anomalies,
-                AnomalyKind::PartitionArrayCrcInvalid { location: Location::Backup },
+                AnomalyKind::PartitionArrayCrcInvalid {
+                    location: Location::Backup,
+                },
             );
         }
         // Byte-compare the two entry arrays directly: this catches tampering even
@@ -255,11 +294,26 @@ fn read_backup<R: Read + Seek>(
         ("revision", primary.revision == backup.revision),
         ("header_size", primary.header_size == backup.header_size),
         ("disk_guid", primary.disk_guid == backup.disk_guid),
-        ("first_usable_lba", primary.first_usable_lba == backup.first_usable_lba),
-        ("last_usable_lba", primary.last_usable_lba == backup.last_usable_lba),
-        ("num_partition_entries", primary.num_partition_entries == backup.num_partition_entries),
-        ("partition_entry_size", primary.partition_entry_size == backup.partition_entry_size),
-        ("partition_array_crc32", primary.partition_array_crc32 == backup.partition_array_crc32),
+        (
+            "first_usable_lba",
+            primary.first_usable_lba == backup.first_usable_lba,
+        ),
+        (
+            "last_usable_lba",
+            primary.last_usable_lba == backup.last_usable_lba,
+        ),
+        (
+            "num_partition_entries",
+            primary.num_partition_entries == backup.num_partition_entries,
+        ),
+        (
+            "partition_entry_size",
+            primary.partition_entry_size == backup.partition_entry_size,
+        ),
+        (
+            "partition_array_crc32",
+            primary.partition_array_crc32 == backup.partition_array_crc32,
+        ),
     ];
     for &(field, ok) in checks {
         if !ok {
@@ -351,7 +405,10 @@ fn check_encrypted_volumes<R: Read + Seek>(
         }
         let entropy = crate::entropy::shannon(&sector);
         if entropy > crate::entropy::HIGH_ENTROPY_THRESHOLD {
-            record(anomalies, AnomalyKind::HiddenEncryptedVolume { index, entropy });
+            record(
+                anomalies,
+                AnomalyKind::HiddenEncryptedVolume { index, entropy },
+            );
         }
     }
 }

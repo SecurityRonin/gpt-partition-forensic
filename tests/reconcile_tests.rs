@@ -94,19 +94,26 @@ fn proper_protective_mbr_is_clean() {
         &[(0, PROTECTIVE_TYPE, 1, (SECTORS - 1) as u32)],
         &[(34, 2047)],
     ));
-    assert!(!k.iter().any(|a| matches!(
-        a,
-        AnomalyKind::MissingProtectiveMbr
-            | AnomalyKind::ProtectiveMbrUndersized { .. }
-            | AnomalyKind::HybridMbrHiddenPartition { .. }
-    )), "got {k:?}");
+    assert!(
+        !k.iter().any(|a| matches!(
+            a,
+            AnomalyKind::MissingProtectiveMbr
+                | AnomalyKind::ProtectiveMbrUndersized { .. }
+                | AnomalyKind::HybridMbrHiddenPartition { .. }
+        )),
+        "got {k:?}"
+    );
 }
 
 #[test]
 fn missing_protective_mbr_flagged() {
     // GPT present but no 0xEE entry in the MBR.
     let k = kinds(build(&[], &[(34, 2047)]));
-    assert!(k.iter().any(|a| matches!(a, AnomalyKind::MissingProtectiveMbr)), "got {k:?}");
+    assert!(
+        k.iter()
+            .any(|a| matches!(a, AnomalyKind::MissingProtectiveMbr)),
+        "got {k:?}"
+    );
 }
 
 #[test]
@@ -114,7 +121,8 @@ fn undersized_protective_mbr_flagged() {
     // 0xEE covers only LBA 1..=1000 of an 8192-sector disk.
     let k = kinds(build(&[(0, PROTECTIVE_TYPE, 1, 1000)], &[(34, 2047)]));
     assert!(
-        k.iter().any(|a| matches!(a, AnomalyKind::ProtectiveMbrUndersized { .. })),
+        k.iter()
+            .any(|a| matches!(a, AnomalyKind::ProtectiveMbrUndersized { .. })),
         "got {k:?}"
     );
 }
@@ -123,11 +131,15 @@ fn undersized_protective_mbr_flagged() {
 fn hybrid_hidden_partition_flagged() {
     // 0xEE + a hybrid 0x83 entry at LBA 5000 that matches NO GPT partition.
     let k = kinds(build(
-        &[(0, PROTECTIVE_TYPE, 1, (SECTORS - 1) as u32), (1, 0x83, 5000, 100)],
+        &[
+            (0, PROTECTIVE_TYPE, 1, (SECTORS - 1) as u32),
+            (1, 0x83, 5000, 100),
+        ],
         &[(34, 2047)],
     ));
     assert!(
-        k.iter().any(|a| matches!(a, AnomalyKind::HybridMbrHiddenPartition { .. })),
+        k.iter()
+            .any(|a| matches!(a, AnomalyKind::HybridMbrHiddenPartition { .. })),
         "got {k:?}"
     );
 }
@@ -140,7 +152,8 @@ fn partition_before_first_usable_flagged() {
         &[(2, 30)],
     ));
     assert!(
-        k.iter().any(|a| matches!(a, AnomalyKind::PartitionOverlapsGptArea { .. })),
+        k.iter()
+            .any(|a| matches!(a, AnomalyKind::PartitionOverlapsGptArea { .. })),
         "got {k:?}"
     );
 }
@@ -149,11 +162,15 @@ fn partition_before_first_usable_flagged() {
 fn hybrid_entry_overlapping_gpt_not_hidden() {
     // 0xEE + a hybrid entry that overlaps the GPT partition → not "hidden".
     let k = kinds(build(
-        &[(0, PROTECTIVE_TYPE, 1, (SECTORS - 1) as u32), (1, 0x07, 34, 2014)],
+        &[
+            (0, PROTECTIVE_TYPE, 1, (SECTORS - 1) as u32),
+            (1, 0x07, 34, 2014),
+        ],
         &[(34, 2047)],
     ));
     assert!(
-        !k.iter().any(|a| matches!(a, AnomalyKind::HybridMbrHiddenPartition { .. })),
+        !k.iter()
+            .any(|a| matches!(a, AnomalyKind::HybridMbrHiddenPartition { .. })),
         "got {k:?}"
     );
 }

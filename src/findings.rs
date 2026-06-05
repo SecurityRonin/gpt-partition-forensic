@@ -306,3 +306,29 @@ impl GptAnalysis {
         self.anomalies.iter().map(|a| a.severity).max()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn anomaly_display_includes_code_and_severity() {
+        let a = Anomaly::new(AnomalyKind::BackupGptUnreadable);
+        let rendered = format!("{a}");
+        assert!(rendered.contains(a.code), "{rendered}");
+        // Severity's own Display impl.
+        assert!(!format!("{}", a.severity).is_empty());
+    }
+
+    #[test]
+    fn severity_orders_info_below_critical() {
+        // Ordering is what `max_severity` relies on.
+        assert!(Severity::Critical > Severity::Info);
+        assert_eq!(
+            [Severity::Low, Severity::Critical, Severity::Medium]
+                .into_iter()
+                .max(),
+            Some(Severity::Critical)
+        );
+    }
+}

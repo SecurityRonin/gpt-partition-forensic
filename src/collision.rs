@@ -33,7 +33,8 @@ const ZERO_GUID: &str = "00000000-0000-0000-0000-000000000000";
 #[must_use]
 pub fn find_disk_guid_collisions(guids: &[&str]) -> Vec<GuidCollision> {
     let mut order: Vec<String> = Vec::new();
-    let mut groups: std::collections::HashMap<String, Vec<usize>> = std::collections::HashMap::new();
+    let mut groups: std::collections::HashMap<String, Vec<usize>> =
+        std::collections::HashMap::new();
     for (i, g) in guids.iter().enumerate() {
         let key = g.to_ascii_uppercase();
         if key == ZERO_GUID {

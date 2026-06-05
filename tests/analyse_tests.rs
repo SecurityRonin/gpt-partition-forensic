@@ -119,6 +119,7 @@ fn well_formed_gpt_is_clean() {
         "well-formed GPT must be clean, got: {:?}",
         a.anomalies.iter().map(|x| x.code).collect::<Vec<_>>()
     );
+    assert_eq!(a.max_severity(), None, "a clean disk has no severity");
 }
 
 #[test]
@@ -126,10 +127,15 @@ fn corrupt_primary_header_crc_flagged() {
     let mut disk = build_gpt_disk();
     disk[512 + 24] ^= 0xFF; // tamper my_lba in primary header
     let k = kinds(&disk);
-    assert!(k.iter().any(|a| matches!(
-        a,
-        AnomalyKind::HeaderCrcInvalid { location: Location::Primary }
-    )), "got {k:?}");
+    assert!(
+        k.iter().any(|a| matches!(
+            a,
+            AnomalyKind::HeaderCrcInvalid {
+                location: Location::Primary
+            }
+        )),
+        "got {k:?}"
+    );
 }
 
 #[test]
@@ -137,10 +143,15 @@ fn corrupt_primary_array_crc_flagged() {
     let mut disk = build_gpt_disk();
     disk[2 * 512 + 40] ^= 0xFF; // tamper an entry's last_lba → array CRC breaks
     let k = kinds(&disk);
-    assert!(k.iter().any(|a| matches!(
-        a,
-        AnomalyKind::PartitionArrayCrcInvalid { location: Location::Primary }
-    )), "got {k:?}");
+    assert!(
+        k.iter().any(|a| matches!(
+            a,
+            AnomalyKind::PartitionArrayCrcInvalid {
+                location: Location::Primary
+            }
+        )),
+        "got {k:?}"
+    );
 }
 
 #[test]
@@ -150,7 +161,8 @@ fn missing_backup_flagged() {
     disk[bhoff..bhoff + 8].fill(0); // wipe backup signature
     let k = kinds(&disk);
     assert!(
-        k.iter().any(|a| matches!(a, AnomalyKind::BackupGptUnreadable)),
+        k.iter()
+            .any(|a| matches!(a, AnomalyKind::BackupGptUnreadable)),
         "got {k:?}"
     );
 }
@@ -170,7 +182,8 @@ fn primary_backup_divergence_flagged() {
     disk[bhoff + 16..bhoff + 20].copy_from_slice(&new_crc.to_le_bytes());
     let k = kinds(&disk);
     assert!(
-        k.iter().any(|a| matches!(a, AnomalyKind::PrimaryBackupDivergence { .. })),
+        k.iter()
+            .any(|a| matches!(a, AnomalyKind::PrimaryBackupDivergence { .. })),
         "got {k:?}"
     );
 }
@@ -265,7 +278,10 @@ fn primary_header_lba_mismatch_flagged() {
     assert!(
         a.anomalies.iter().any(|x| matches!(
             x.kind,
-            AnomalyKind::HeaderLbaMismatch { location: Location::Primary, .. }
+            AnomalyKind::HeaderLbaMismatch {
+                location: Location::Primary,
+                ..
+            }
         )),
         "got: {:?}",
         a.anomalies.iter().map(|x| x.code).collect::<Vec<_>>()
@@ -295,7 +311,9 @@ fn header_slack_data_flagged() {
     assert!(
         k.iter().any(|a| matches!(
             a,
-            AnomalyKind::HeaderSlackData { location: Location::Primary }
+            AnomalyKind::HeaderSlackData {
+                location: Location::Primary
+            }
         )),
         "got {k:?}"
     );
@@ -314,18 +332,29 @@ fn overlapping_partitions_flagged() {
     let last_usable = backup_array_lba - 1;
     let backup_hdr_lba = SECTORS - 1;
     disk[512..1024].copy_from_slice(&header_sector(
-        1, backup_hdr_lba, 2, first_usable, last_usable, array_crc,
+        1,
+        backup_hdr_lba,
+        2,
+        first_usable,
+        last_usable,
+        array_crc,
     ));
     disk[1024..1024 + array.len()].copy_from_slice(&array);
     let baoff = (backup_array_lba * 512) as usize;
     disk[baoff..baoff + array.len()].copy_from_slice(&array);
     let bhoff = (backup_hdr_lba * 512) as usize;
     disk[bhoff..bhoff + 512].copy_from_slice(&header_sector(
-        backup_hdr_lba, 1, backup_array_lba, first_usable, last_usable, array_crc,
+        backup_hdr_lba,
+        1,
+        backup_array_lba,
+        first_usable,
+        last_usable,
+        array_crc,
     ));
     let k = kinds(&disk);
     assert!(
-        k.iter().any(|a| matches!(a, AnomalyKind::OverlappingPartitions { .. })),
+        k.iter()
+            .any(|a| matches!(a, AnomalyKind::OverlappingPartitions { .. })),
         "got {k:?}"
     );
 }

@@ -15,7 +15,7 @@ fn build_header(
     s[0..8].copy_from_slice(b"EFI PART");
     s[8..12].copy_from_slice(&0x0001_0000u32.to_le_bytes()); // revision 1.0
     s[12..16].copy_from_slice(&92u32.to_le_bytes()); // header_size
-    // 16..20 header_crc32 — filled last
+                                                     // 16..20 header_crc32 — filled last
     s[24..32].copy_from_slice(&my_lba.to_le_bytes());
     s[32..40].copy_from_slice(&alternate_lba.to_le_bytes());
     s[40..48].copy_from_slice(&34u64.to_le_bytes()); // first_usable_lba
@@ -48,7 +48,10 @@ fn parses_fields() {
 fn valid_self_crc_recognised() {
     let s = build_header(1, 8191, 2, 128, 128, 0);
     let h = GptHeader::parse(&s).unwrap();
-    assert!(h.header_crc_valid, "freshly-built header must self-validate");
+    assert!(
+        h.header_crc_valid,
+        "freshly-built header must self-validate"
+    );
 }
 
 #[test]

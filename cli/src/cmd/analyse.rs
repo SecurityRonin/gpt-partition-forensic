@@ -12,7 +12,11 @@ const RULE: usize = 80;
 ///
 /// `disk_size` bounds the backup-GPT read (`0` = locate it via the primary
 /// header alone); `image_name` is echoed into the report header.
-pub fn run<R: Read + Seek>(reader: &mut R, disk_size: u64, image_name: &str) -> Result<String, Error> {
+pub fn run<R: Read + Seek>(
+    reader: &mut R,
+    disk_size: u64,
+    image_name: &str,
+) -> Result<String, Error> {
     let a = analyse(reader, disk_size)?;
     let mut out = String::new();
 
@@ -27,7 +31,11 @@ pub fn run<R: Read + Seek>(reader: &mut R, disk_size: u64, image_name: &str) -> 
     writeln!(
         out,
         "Header CRC:      {}",
-        if a.primary.header_crc_valid { "valid" } else { "INVALID" }
+        if a.primary.header_crc_valid {
+            "valid"
+        } else {
+            "INVALID"
+        }
     )
     .unwrap();
     writeln!(
@@ -55,13 +63,24 @@ pub fn run<R: Read + Seek>(reader: &mut R, disk_size: u64, image_name: &str) -> 
     writeln!(
         out,
         "{} {} {} {} {}",
-        "-".repeat(3), "-".repeat(31), "-".repeat(12), "-".repeat(11), "-".repeat(24)
+        "-".repeat(3),
+        "-".repeat(31),
+        "-".repeat(12),
+        "-".repeat(11),
+        "-".repeat(24)
     )
     .unwrap();
     for (i, p) in a.partitions.iter().enumerate() {
         // Resolve the type GUID to a human name, falling back to the raw GUID.
-        let ty = p.type_name().map_or_else(|| p.type_guid.to_string(), ToString::to_string);
-        writeln!(out, "{i:<3} {ty:<31} {:<12} {:<11} {}", p.first_lba, p.last_lba, p.name).unwrap();
+        let ty = p
+            .type_name()
+            .map_or_else(|| p.type_guid.to_string(), ToString::to_string);
+        writeln!(
+            out,
+            "{i:<3} {ty:<31} {:<12} {:<11} {}",
+            p.first_lba, p.last_lba, p.name
+        )
+        .unwrap();
     }
     out.push('\n');
 

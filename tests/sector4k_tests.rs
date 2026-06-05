@@ -75,12 +75,16 @@ fn forced_sector_size_overrides_detection() {
     use gpt_forensic::{analyse_with_options, AnalyseOptions};
     let disk = build_4kn();
     // Forcing 512 on a 4Kn disk → the header at byte 512 is zero → error.
-    let forced_512 = AnalyseOptions { sector_size: Some(512) };
+    let forced_512 = AnalyseOptions {
+        sector_size: Some(512),
+    };
     assert!(
         analyse_with_options(&mut Cursor::new(&disk), SECTORS * SS as u64, forced_512).is_err()
     );
     // Forcing 4096 parses correctly.
-    let forced_4k = AnalyseOptions { sector_size: Some(4096) };
+    let forced_4k = AnalyseOptions {
+        sector_size: Some(4096),
+    };
     let a = analyse_with_options(&mut Cursor::new(disk), SECTORS * SS as u64, forced_4k).unwrap();
     assert_eq!(a.sector_size, 4096);
 }

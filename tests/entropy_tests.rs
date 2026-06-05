@@ -18,11 +18,19 @@ fn two_equiprobable_values_is_one_bit() {
     for b in data.iter_mut().skip(64) {
         *b = 0xFF;
     }
-    assert!((shannon(&data) - 1.0).abs() < 1e-9, "got {}", shannon(&data));
+    assert!(
+        (shannon(&data) - 1.0).abs() < 1e-9,
+        "got {}",
+        shannon(&data)
+    );
 }
 
 #[test]
 fn full_byte_range_is_eight_bits() {
     let data: Vec<u8> = (0..=255u8).collect();
-    assert!((shannon(&data) - 8.0).abs() < 1e-9, "got {}", shannon(&data));
+    assert!(
+        (shannon(&data) - 8.0).abs() < 1e-9,
+        "got {}",
+        shannon(&data)
+    );
 }

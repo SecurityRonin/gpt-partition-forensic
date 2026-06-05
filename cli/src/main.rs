@@ -54,7 +54,10 @@ fn main() -> Result<()> {
     match cli.command {
         Command::Analyse { image } => {
             let (mut reader, size) = open(&image)?;
-            let name = image.file_name().and_then(|n| n.to_str()).unwrap_or("disk.img");
+            let name = image
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("disk.img");
             let out = cmd::analyse::run(&mut reader, size, name).context("analysis failed")?;
             print!("{out}");
         }
@@ -62,7 +65,9 @@ fn main() -> Result<()> {
             let (mut reader, _) = open(&image)?;
             if raw {
                 let bytes = cmd::dump::run_raw(&mut reader, lba).context("dump failed")?;
-                io::stdout().write_all(&bytes).context("stdout write failed")?;
+                io::stdout()
+                    .write_all(&bytes)
+                    .context("stdout write failed")?;
             } else {
                 let out = cmd::dump::run(&mut reader, lba).context("dump failed")?;
                 print!("{out}");
