@@ -90,6 +90,7 @@ One forensic parser per partitioning scheme — each a pure `Read + Seek` librar
 
 - [`mbr-forensic`](https://github.com/SecurityRonin/mbr-forensic) — Master Boot Record (legacy BIOS partitioning; auto-delegates here for protective-MBR/GPT disks)
 - [`apm-forensic`](https://github.com/SecurityRonin/apm-forensic) — Apple Partition Map (classic Mac and hybrid optical media)
+- [`disk-forensic`](https://github.com/SecurityRonin/disk-forensic) — **orchestrator**: point it at any disk, it auto-detects the scheme and dispatches to the right parser above
 
 ---
 
