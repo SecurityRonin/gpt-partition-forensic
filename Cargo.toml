@@ -18,7 +18,7 @@ cast_sign_loss              = "allow"
 
 [package]
 name = "gpt-forensic"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.85"
 license = "MIT"
@@ -33,7 +33,7 @@ thiserror = "2"
 tracing = { version = "0.1", optional = true }
 serde = { version = "1", features = ["derive"], optional = true }
 # Knowledge layer (sibling repo): GPT partition-type GUID → name table.
-forensicnomicon = { path = "../forensicnomicon", version = "0.1.0" }
+forensicnomicon = "0.2.0"
 
 [features]
 default = []

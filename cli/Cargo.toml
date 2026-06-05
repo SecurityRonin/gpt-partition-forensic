@@ -1,6 +1,6 @@
 [package]
 name = "gpt-forensic-cli"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.85"
 description = "Command-line tool for forensic inspection of GUID Partition Table (GPT) disk images"
@@ -19,7 +19,7 @@ name = "gpt_forensic_cli"
 path = "src/lib.rs"
 
 [dependencies]
-gpt-forensic = { path = "..", version = "0.1.0" }
+gpt-forensic = { path = "..", version = "0.2.0" }
 clap = { version = "4", features = ["derive"] }
 anyhow = "1"
 
