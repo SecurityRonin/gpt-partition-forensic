@@ -13,6 +13,28 @@ use crate::findings::{Anomaly, AnomalyKind, GptAnalysis, Location};
 use crate::header::GptHeader;
 use crate::Error;
 
+/// Options controlling [`analyse_with_options`].
+#[derive(Debug, Clone, Copy, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+pub struct AnalyseOptions {
+    /// Force the logical sector size instead of auto-detecting it from the GPT
+    /// header location. `None` (the default) auto-detects 512 vs 4096.
+    pub sector_size: Option<u64>,
+}
+
+/// Like [`analyse`], but with explicit [`AnalyseOptions`] (e.g. to force the
+/// sector size when the header magic is corrupt).
+///
+/// # Errors
+/// Same as [`analyse`].
+pub fn analyse_with_options<R: Read + Seek>(
+    reader: &mut R,
+    disk_size_bytes: u64,
+    opts: AnalyseOptions,
+) -> Result<GptAnalysis, Error> {
+    analyse_inner(reader, disk_size_bytes, opts)
+}
+
 /// Probe the logical sector size by locating the GPT header ("EFI PART") at
 /// LBA 1 — byte 512 for 512-byte/512e sectors, byte 4096 for 4Kn. Defaults to
 /// 512 when neither matches (the primary parse then reports `BadSignature`).
@@ -37,8 +59,19 @@ fn detect_sector_size<R: Read + Seek>(reader: &mut R) -> Result<u64, Error> {
 /// failure of the primary structures.
 #[cfg_attr(feature = "trace", tracing::instrument(level = "debug", skip(reader)))]
 pub fn analyse<R: Read + Seek>(reader: &mut R, disk_size_bytes: u64) -> Result<GptAnalysis, Error> {
+    analyse_inner(reader, disk_size_bytes, AnalyseOptions::default())
+}
+
+fn analyse_inner<R: Read + Seek>(
+    reader: &mut R,
+    disk_size_bytes: u64,
+    opts: AnalyseOptions,
+) -> Result<GptAnalysis, Error> {
     let mut anomalies = Vec::new();
-    let sector_size = detect_sector_size(reader)?;
+    let sector_size = match opts.sector_size {
+        Some(s) => s,
+        None => detect_sector_size(reader)?,
+    };
 
     // ── Primary header + entry array ────────────────────────────────────────
     let primary_sector = read_sector(reader, 1, sector_size)?;

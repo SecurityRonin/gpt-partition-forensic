@@ -23,7 +23,7 @@ pub mod sha256;
 
 mod analyse;
 
-pub use analyse::analyse;
+pub use analyse::{analyse, analyse_with_options, AnalyseOptions};
 pub use entry::GptEntry;
 pub use findings::{Anomaly, AnomalyKind, GptAnalysis, Location, Severity};
 pub use guid::Guid;
