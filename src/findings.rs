@@ -28,26 +28,19 @@ impl fmt::Display for Location {
     }
 }
 
-/// Severity of a GPT anomaly.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
-pub enum Severity {
-    Info,
-    Low,
-    Medium,
-    High,
-    Critical,
-}
+/// The canonical 5-level severity scale, shared across every SecurityRonin
+/// analyzer via [`forensicnomicon::report`].
+pub use forensicnomicon::report::Severity;
 
-impl fmt::Display for Severity {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(match self {
-            Severity::Info => "INFO",
-            Severity::Low => "LOW",
-            Severity::Medium => "MEDIUM",
-            Severity::High => "HIGH",
-            Severity::Critical => "CRITICAL",
-        })
+impl forensicnomicon::report::Observation for Anomaly {
+    fn severity(&self) -> Option<Severity> {
+        Some(self.severity)
+    }
+    fn code(&self) -> &'static str {
+        self.code
+    }
+    fn note(&self) -> String {
+        self.note.clone()
     }
 }
 

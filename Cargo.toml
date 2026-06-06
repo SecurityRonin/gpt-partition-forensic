@@ -1,6 +1,6 @@
 [package]
 name = "gpt-forensic"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 rust-version = "1.85"
 license = "MIT"
@@ -17,13 +17,13 @@ thiserror = "2"
 tracing = { version = "0.1", optional = true }
 serde = { version = "1", features = ["derive"], optional = true }
 # Knowledge layer (sibling repo): GPT partition-type GUID → name table.
-forensicnomicon = "0.2.0"
+forensicnomicon = { version = "0.3.0", path = "../forensicnomicon" }
 
 [features]
 default = []
 # Forward internal diagnostics to the `tracing` ecosystem.
 trace = ["dep:tracing"]
-serde = ["dep:serde"]
+serde = ["dep:serde", "forensicnomicon/serde"]
 
 [dev-dependencies]
 serde_json = "1"
