@@ -17,7 +17,7 @@ thiserror = "2"
 tracing = { version = "0.1", optional = true }
 serde = { version = "1", features = ["derive"], optional = true }
 # Knowledge layer (sibling repo): GPT partition-type GUID → name table.
-forensicnomicon = { version = "0.3.0", path = "../forensicnomicon" }
+forensicnomicon = "0.3.1"
 
 [features]
 default = []
