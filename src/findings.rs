@@ -42,6 +42,96 @@ impl forensicnomicon::report::Observation for Anomaly {
     fn note(&self) -> String {
         self.note.clone()
     }
+    fn evidence(&self) -> Vec<forensicnomicon::report::Evidence> {
+        use forensicnomicon::report::Evidence;
+        use forensicnomicon::report::Location as Loc;
+        let at = |field: String, value: String, location: Loc| Evidence {
+            field,
+            value,
+            location: Some(location),
+        };
+        match &self.kind {
+            // `location` here is the GPT *copy* (primary/backup), not an address.
+            AnomalyKind::HeaderCrcInvalid { location }
+            | AnomalyKind::HeaderSlackData { location }
+            | AnomalyKind::PartitionArrayCrcInvalid { location } => vec![Evidence {
+                field: "GPT copy".to_string(),
+                value: location.to_string(),
+                location: None,
+            }],
+            AnomalyKind::HeaderLbaMismatch {
+                location,
+                claimed,
+                actual,
+            } => vec![at(
+                "header LBA".to_string(),
+                format!("{location} header claimed {claimed}, read at {actual}"),
+                Loc::Lba(*actual),
+            )],
+            AnomalyKind::BackupGptNotAtDiskEnd {
+                alternate_lba,
+                disk_last_lba,
+            } => vec![at(
+                "backup GPT".to_string(),
+                format!("alternate_lba {alternate_lba}, disk ends at {disk_last_lba}"),
+                Loc::Lba(*alternate_lba),
+            )],
+            AnomalyKind::PrimaryBackupDivergence { field } => vec![at(
+                "diverging field".to_string(),
+                (*field).to_string(),
+                Loc::Field((*field).to_string()),
+            )],
+            AnomalyKind::PartitionOutOfBounds {
+                index,
+                last_lba,
+                last_usable,
+            } => vec![at(
+                format!("partition {index} last LBA"),
+                format!("{last_lba} past last usable {last_usable}"),
+                Loc::Lba(*last_lba),
+            )],
+            AnomalyKind::PartitionOverlapsGptArea {
+                index,
+                first_lba,
+                first_usable,
+            } => vec![at(
+                format!("partition {index} first LBA"),
+                format!("{first_lba} before first usable {first_usable}"),
+                Loc::Lba(*first_lba),
+            )],
+            AnomalyKind::ProtectiveMbrUndersized {
+                covered_last_lba,
+                disk_last_lba,
+            } => vec![at(
+                "protective MBR coverage".to_string(),
+                format!("covers up to {covered_last_lba} of {disk_last_lba}"),
+                Loc::Lba(*covered_last_lba),
+            )],
+            AnomalyKind::HybridMbrHiddenPartition {
+                mbr_index,
+                lba_start,
+                lba_count,
+            } => vec![at(
+                format!("hybrid MBR entry {mbr_index}"),
+                format!("starts at {lba_start}, {lba_count} sectors"),
+                Loc::Lba(u64::from(*lba_start)),
+            )],
+            // Index / relationship-only kinds: the partition indices are the
+            // evidence, with no single on-disk location.
+            AnomalyKind::OverlappingPartitions { a, b }
+            | AnomalyKind::DuplicatePartitionGuid { a, b } => vec![Evidence {
+                field: "partitions".to_string(),
+                value: format!("{a} & {b}"),
+                location: None,
+            }],
+            AnomalyKind::HiddenEncryptedVolume { index, entropy } => vec![Evidence {
+                field: format!("partition {index} entropy"),
+                value: format!("{entropy:.2}"),
+                location: None,
+            }],
+            AnomalyKind::BackupGptUnreadable | AnomalyKind::MissingProtectiveMbr => Vec::new(),
+        }
+    }
 }
 
 /// Classification of a GPT anomaly.
