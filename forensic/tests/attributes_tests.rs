@@ -1,6 +1,7 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! GPT partition attribute-flag decoding (knowledge from forensicnomicon).
 
-use gpt_forensic::entry::GptEntry;
+use gpt_partition_forensic::entry::GptEntry;
 
 fn entry_with_attrs(attrs: u64) -> [u8; 128] {
     let mut e = [0u8; 128];

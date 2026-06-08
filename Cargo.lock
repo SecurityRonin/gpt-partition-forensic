@@ -4,15 +4,28 @@ version = 4
 
 [[package]]
 name = "forensicnomicon"
-version = "0.2.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2da9447aa9b07772556dbd2a5640c0270af81eb4d4aca5b1f428868240bcd561"
+checksum = "f66c898c0f3813cb476c7d1f9e78919566e753b8ce5d581ca8d0f364a55b04b5"
+dependencies = [
+ "serde",
+]
 
 [[package]]
-name = "gpt-forensic"
-version = "0.3.0"
+name = "gpt-partition-core"
+version = "0.4.1"
 dependencies = [
  "forensicnomicon",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "gpt-partition-forensic"
+version = "0.4.1"
+dependencies = [
+ "forensicnomicon",
+ "gpt-partition-core",
  "serde",
  "serde_json",
  "thiserror",

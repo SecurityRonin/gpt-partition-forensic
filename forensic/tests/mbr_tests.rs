@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Minimal legacy/protective MBR partition-entry reader (LBA 0).
 //!
 //! gpt-forensic reads just the four 16-byte MBR partition entries so it can
@@ -5,7 +6,7 @@
 //! the full mbr-forensic engine. This keeps the cross-MBR↔GPT examination
 //! available to standalone gpt-forensic consumers.
 
-use gpt_forensic::mbr::{parse_mbr_entries, MbrPartitionRecord, PROTECTIVE_TYPE};
+use gpt_partition_forensic::mbr::{parse_mbr_entries, MbrPartitionRecord, PROTECTIVE_TYPE};
 
 fn raw_entry(status: u8, type_code: u8, lba_start: u32, lba_count: u32) -> [u8; 16] {
     let mut e = [0u8; 16];

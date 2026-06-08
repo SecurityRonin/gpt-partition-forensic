@@ -1,5 +1,5 @@
 [package]
-name = "gpt-forensic-fuzz"
+name = "gpt-partition-forensic-fuzz"
 version = "0.0.0"
 publish = false
 edition = "2021"
@@ -7,22 +7,23 @@ edition = "2021"
 [package.metadata]
 cargo-fuzz = true
 
+[workspace]
+
 [dependencies]
 libfuzzer-sys = "0.4"
-
-[dependencies.gpt-forensic]
-path = ".."
+gpt = { path = "../core", package = "gpt-partition-core" }
+gpt-partition-forensic = { path = "../forensic" }
 
 [[bin]]
-name = "parse_header"
-path = "fuzz_targets/parse_header.rs"
+name = "fuzz_parser"
+path = "fuzz_targets/fuzz_parser.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
-name = "analyse_full"
-path = "fuzz_targets/analyse_full.rs"
+name = "fuzz_forensic"
+path = "fuzz_targets/fuzz_forensic.rs"
 test = false
 doc = false
 bench = false

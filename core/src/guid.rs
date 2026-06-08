@@ -2,8 +2,8 @@
 //!
 //! A GPT GUID is stored as 16 bytes where the first three groups are
 //! little-endian and the last two are big-endian — the standard Microsoft GUID
-//! on-disk layout. [`Guid::Display`] renders the canonical
-//! `XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX` form.
+//! on-disk layout. The [`Guid`] [`Display`](core::fmt::Display) impl renders the
+//! canonical `XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX` form.
 
 use core::fmt;
 

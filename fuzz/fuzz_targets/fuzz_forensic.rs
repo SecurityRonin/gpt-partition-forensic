@@ -15,7 +15,7 @@ fuzz_target!(|data: &[u8]| {
     let disk_size = data.len() as u64;
     let mut cursor = Cursor::new(data);
 
-    match gpt_forensic::analyse(&mut cursor, disk_size) {
+    match gpt_partition_forensic::analyse(&mut cursor, disk_size) {
         Ok(analysis) => {
             let _ = analysis.disk_guid.to_string();
             let _ = analysis.max_severity();
@@ -32,8 +32,8 @@ fuzz_target!(|data: &[u8]| {
                 let _ = &a.note;
             }
         }
-        Err(gpt_forensic::Error::BadSignature) => {}
-        Err(gpt_forensic::Error::TooShort { .. }) => {}
-        Err(gpt_forensic::Error::Io(_)) => {}
+        Err(gpt_partition_forensic::Error::BadSignature) => {}
+        Err(gpt_partition_forensic::Error::TooShort { .. }) => {}
+        Err(gpt_partition_forensic::Error::Io(_)) => {}
     }
 });

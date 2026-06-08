@@ -1,7 +1,8 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! 4Kn (4096-byte logical sector) GPT support via auto-detection.
 #![allow(clippy::similar_names)]
 
-use gpt_forensic::{analyse, crc32::checksum};
+use gpt_partition_forensic::{analyse, crc32::checksum};
 use std::io::Cursor;
 
 const SS: usize = 4096; // 4Kn logical sector
@@ -72,7 +73,7 @@ fn build_4kn() -> Vec<u8> {
 
 #[test]
 fn forced_sector_size_overrides_detection() {
-    use gpt_forensic::{analyse_with_options, AnalyseOptions};
+    use gpt_partition_forensic::{analyse_with_options, AnalyseOptions};
     let disk = build_4kn();
     // Forcing 512 on a 4Kn disk → the header at byte 512 is zero → error.
     let forced_512 = AnalyseOptions {

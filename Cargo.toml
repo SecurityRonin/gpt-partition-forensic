@@ -1,42 +1,25 @@
-[package]
-name = "gpt-forensic"
-version = "0.4.1"
-edition = "2021"
-rust-version = "1.85"
-license = "MIT"
-description = "Forensic GUID Partition Table (GPT) parser — structure, CRC integrity, primary/backup divergence, and anomaly detection"
-repository = "https://github.com/SecurityRonin/gpt-forensic"
-keywords = ["forensics", "gpt", "partition", "disk-image", "efi"]
-categories = ["parser-implementations", "filesystem"]
-exclude = ["fuzz/", ".github/", ".pre-commit-config.yaml", "deny.toml", "renovate.json"]
+[workspace]
+resolver = "2"
+members = ["core", "forensic"]
 
-# `fuzz/` is a standalone cargo-fuzz workspace with its own lockfile.
+[workspace.lints.rust]
+unsafe_code = "forbid"
 
-[dependencies]
-thiserror = "2"
-tracing = { version = "0.1", optional = true }
-serde = { version = "1", features = ["derive"], optional = true }
-# Knowledge layer (sibling repo): GPT partition-type GUID → name table.
-forensicnomicon = "0.3.1"
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+all = { level = "warn", priority = -1 }
+correctness = { level = "deny", priority = -1 }
+suspicious = { level = "deny", priority = -1 }
 
-[features]
-default = []
-# Forward internal diagnostics to the `tracing` ecosystem.
-trace = ["dep:tracing"]
-serde = ["dep:serde", "forensicnomicon/serde"]
-
-[dev-dependencies]
-serde_json = "1"
-
-[lints.rust]
-unsafe_code = "deny"
-
-[lints.clippy]
-pedantic                    = { level = "warn", priority = -1 }
-module_name_repetitions     = "allow"
-must_use_candidate          = "allow"
-missing_errors_doc          = "allow"
-missing_panics_doc          = "allow"
-cast_possible_truncation    = "allow"
-cast_possible_wrap          = "allow"
-cast_sign_loss              = "allow"
+# Paranoid: production parsers must never panic on crafted input. Tests opt out
+# via `#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]`.
+unwrap_used = { level = "deny", priority = 0 }
+expect_used = { level = "deny", priority = 0 }
+module_name_repetitions = { level = "allow", priority = 1 }
+must_use_candidate = { level = "allow", priority = 1 }
+missing_errors_doc = { level = "allow", priority = 1 }
+missing_panics_doc = { level = "allow", priority = 1 }
+cast_possible_truncation = { level = "allow", priority = 1 }
+cast_possible_wrap = { level = "allow", priority = 1 }
+cast_sign_loss = { level = "allow", priority = 1 }
+cast_precision_loss = { level = "allow", priority = 1 }

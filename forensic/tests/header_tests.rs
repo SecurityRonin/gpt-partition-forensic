@@ -1,6 +1,7 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! GPT header parsing + self-CRC validation.
 
-use gpt_forensic::{crc32::checksum, header::GptHeader, Error};
+use gpt_partition_forensic::{crc32::checksum, header::GptHeader, Error};
 
 /// Build a 512-byte LBA holding a GPT header with a correct self-CRC.
 fn build_header(

@@ -1,6 +1,6 @@
 [graph]
 # The fuzz crate is a standalone workspace; only check the main workspace.
-exclude = ["gpt-forensic-fuzz"]
+exclude = ["gpt-partition-forensic-fuzz"]
 
 # cargo-deny v2: anything not in `allow` is denied — no separate deny list.
 # Copyleft licenses (GPL/LGPL/AGPL) are excluded simply by omission.

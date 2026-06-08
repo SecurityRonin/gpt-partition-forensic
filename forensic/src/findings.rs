@@ -5,9 +5,9 @@
 
 use core::fmt;
 
-use crate::entry::GptEntry;
-use crate::guid::Guid;
-use crate::header::GptHeader;
+use gpt::entry::GptEntry;
+use gpt::guid::Guid;
+use gpt::header::GptHeader;
 
 /// Which GPT copy a finding pertains to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

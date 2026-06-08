@@ -1,6 +1,7 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Shannon entropy over byte slices (used for hidden encrypted-volume detection).
 
-use gpt_forensic::entropy::shannon;
+use gpt_partition_forensic::entropy::shannon;
 
 #[test]
 fn all_zero_is_zero() {

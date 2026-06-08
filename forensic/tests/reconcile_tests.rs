@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! MBR ↔ GPT reconciliation (available to standalone gpt-forensic consumers).
 //!
 //! Reconciling the legacy MBR's view of the disk against the GPT catches the
@@ -6,7 +7,9 @@
 //! GPT-invisible).
 #![allow(clippy::similar_names)]
 
-use gpt_forensic::{analyse, crc32::checksum, findings::AnomalyKind, mbr::PROTECTIVE_TYPE};
+use gpt_partition_forensic::{
+    analyse, crc32::checksum, findings::AnomalyKind, mbr::PROTECTIVE_TYPE,
+};
 use std::io::Cursor;
 
 const SECTORS: u64 = 8192;

@@ -9,7 +9,7 @@
 //! It also provides [`find_duplicate_partition_guids`] for the intra-disk case:
 //! two partition entries sharing one unique GUID (a cloned/duplicated entry).
 
-use crate::entry::GptEntry;
+use gpt::entry::GptEntry;
 
 /// A set of disks that share one (non-zero) GPT disk GUID.
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -1,8 +1,9 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! gpt-forensic anomalies normalize onto the canonical `forensicnomicon::report`
 //! model via the `Observation` producer trait.
 
 use forensicnomicon::report::{Observation, Source};
-use gpt_forensic::{Anomaly, AnomalyKind};
+use gpt_partition_forensic::{Anomaly, AnomalyKind};
 
 #[test]
 fn anomaly_converts_to_a_canonical_finding() {
@@ -28,7 +29,8 @@ fn anomaly_evidence_carries_its_location() {
     });
     let ev = a.evidence();
     assert!(
-        ev.iter().any(|e| matches!(e.location, Some(Location::Lba(4096)))),
+        ev.iter()
+            .any(|e| matches!(e.location, Some(Location::Lba(4096)))),
         "out-of-bounds partition should surface its last_lba as evidence: {ev:?}"
     );
 }

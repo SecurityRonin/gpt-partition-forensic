@@ -1,6 +1,7 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! GPT partition-type GUID → human-readable name (knowledge from forensicnomicon).
 
-use gpt_forensic::entry::GptEntry;
+use gpt_partition_forensic::entry::GptEntry;
 
 const ESP_TYPE: [u8; 16] = [
     0x28, 0x73, 0x2A, 0xC1, 0x1F, 0xF8, 0xD2, 0x11, 0xBA, 0x4B, 0x00, 0xA0, 0xC9, 0x3E, 0xC9, 0x3B,

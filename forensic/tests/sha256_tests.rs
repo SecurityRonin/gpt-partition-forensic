@@ -1,6 +1,7 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! SHA-256 (FIPS 180-4) known-answer tests, against the NIST example vectors.
 
-use gpt_forensic::sha256::{digest, hex};
+use gpt_partition_forensic::sha256::{digest, hex};
 
 #[test]
 fn empty_string_vector() {

@@ -101,10 +101,12 @@ pub fn digest(data: &[u8]) -> [u8; 32] {
 /// Render a digest as a lowercase hex string.
 #[must_use]
 pub fn hex(digest: &[u8; 32]) -> String {
+    const LUT: &[u8; 16] = b"0123456789abcdef";
     let mut s = String::with_capacity(64);
     for b in digest {
-        s.push(char::from_digit(u32::from(b >> 4), 16).unwrap());
-        s.push(char::from_digit(u32::from(b & 0xf), 16).unwrap());
+        // Both indices are nibbles (0..=15), so the LUT lookup is total.
+        s.push(LUT[(b >> 4) as usize] as char);
+        s.push(LUT[(b & 0xf) as usize] as char);
     }
     s
 }

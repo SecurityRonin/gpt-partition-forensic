@@ -7,11 +7,11 @@
 
 use std::io::{Read, Seek, SeekFrom};
 
-use crate::crc32;
-use crate::entry::{parse_entry_array, GptEntry};
 use crate::findings::{Anomaly, AnomalyKind, GptAnalysis, Location};
-use crate::header::GptHeader;
-use crate::Error;
+use gpt::crc32;
+use gpt::entry::{parse_entry_array, GptEntry};
+use gpt::header::GptHeader;
+use gpt::Error;
 
 /// Options controlling [`analyse_with_options`].
 #[derive(Debug, Clone, Copy, Default)]
@@ -42,7 +42,7 @@ fn detect_sector_size<R: Read + Seek>(reader: &mut R) -> Result<u64, Error> {
     for size in [512u64, 4096] {
         reader.seek(SeekFrom::Start(size))?;
         let mut sig = [0u8; 8];
-        if reader.read_exact(&mut sig).is_ok() && &sig == crate::header::SIGNATURE {
+        if reader.read_exact(&mut sig).is_ok() && &sig == gpt::header::SIGNATURE {
             return Ok(size);
         }
     }
@@ -165,7 +165,7 @@ fn analyse_inner<R: Read + Seek>(
     // Tamper-evident fingerprint of the partition table (header + entry array).
     let mut evidence = primary_sector.to_vec();
     evidence.extend_from_slice(&primary_array);
-    let gpt_sha256 = crate::sha256::hex(&crate::sha256::digest(&evidence));
+    let gpt_sha256 = gpt::sha256::hex(&gpt::sha256::digest(&evidence));
 
     let disk_guid = primary.disk_guid;
     Ok(GptAnalysis {
@@ -343,7 +343,7 @@ fn reconcile_mbr<R: Read + Seek>(
     let Ok(sector) = read_sector(reader, 0, sector_size) else {
         return; // no readable MBR to reconcile against
     };
-    let mbr = crate::mbr::parse_mbr_entries(&sector);
+    let mbr = gpt::mbr::parse_mbr_entries(&sector);
     let active: Vec<_> = mbr.iter().filter(|e| !e.is_empty()).collect();
 
     match active.iter().find(|e| e.is_protective()) {

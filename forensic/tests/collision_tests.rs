@@ -1,6 +1,7 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Cross-disk GPT disk-GUID collision detection (cloning / imaging indicator).
 
-use gpt_forensic::collision::{find_disk_guid_collisions, GuidCollision};
+use gpt_partition_forensic::collision::{find_disk_guid_collisions, GuidCollision};
 
 const ZERO: &str = "00000000-0000-0000-0000-000000000000";
 

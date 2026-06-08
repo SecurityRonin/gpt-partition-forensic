@@ -1,9 +1,10 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Intra-disk duplicate partition unique-GUID detection.
 //!
 //! Every GPT partition's unique GUID is meant to be unique within the disk. Two
 //! entries sharing one indicates a cloned/duplicated entry — a tampering signal.
 
-use gpt_forensic::{
+use gpt_partition_forensic::{
     collision::find_duplicate_partition_guids, entry::GptEntry, findings::AnomalyKind, guid::Guid,
 };
 

@@ -1,6 +1,7 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! GPT partition-entry parsing and array CRC.
 
-use gpt_forensic::{
+use gpt_partition_forensic::{
     crc32::checksum,
     entry::{parse_entry_array, GptEntry},
 };

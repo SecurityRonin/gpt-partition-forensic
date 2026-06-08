@@ -1,7 +1,8 @@
 #![allow(clippy::similar_names)] // baoff/bhoff offset locals
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! End-to-end GPT analysis: CRC integrity, primary/backup divergence, overlaps.
 
-use gpt_forensic::{analyse, crc32::checksum, findings::AnomalyKind, Location};
+use gpt_partition_forensic::{analyse, crc32::checksum, findings::AnomalyKind, Location};
 use std::io::Cursor;
 
 const SECTORS: u64 = 8192;
@@ -295,7 +296,8 @@ fn exposes_gpt_evidence_hash() {
     let disk = build_gpt_disk();
     let mut buf = disk[512..1024].to_vec();
     buf.extend_from_slice(&disk[1024..1024 + (NUM as usize) * (ESIZE as usize)]);
-    let expected = gpt_forensic::sha256::hex(&gpt_forensic::sha256::digest(&buf));
+    let expected =
+        gpt_partition_forensic::sha256::hex(&gpt_partition_forensic::sha256::digest(&buf));
 
     let a = analyse(&mut Cursor::new(build_gpt_disk()), SECTORS * 512).unwrap();
     assert_eq!(a.gpt_sha256, expected);
