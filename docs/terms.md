@@ -1,6 +1,6 @@
 # Terms of Service
 
-**gpt-forensic** is free, open-source software licensed under the
+**gpt-partition-forensic** is free, open-source software licensed under the
 [MIT License](../LICENSE). These terms supplement, but do not override, that
 licence.
 
