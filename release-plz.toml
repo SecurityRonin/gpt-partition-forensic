@@ -1,0 +1,28 @@
+# release-plz — automate the version cascade that this fleet did by hand.
+#
+# What it removes: manually bumping each crate's version, rewriting every
+# dependent's version requirement, and `cargo publish`-ing leaf-first. release-plz
+# reads conventional-commit history, computes the semver bump per crate, updates
+# dependents' requirements (including the inter-crate `gpt` pin in
+# [workspace.dependencies]), regenerates CHANGELOGs, opens one "release" PR, and
+# on merge tags + publishes in topological order.
+#
+# Wire-up: a CI job (.github/workflows/release-plz.yml) running `release-plz`
+# on push to main, with a CARGO_REGISTRY_TOKEN secret and a GITHUB_TOKEN.
+# See https://release-plz.dev/docs
+
+[workspace]
+# Keep path-dependency version requirements in lockstep with the version bump
+# (so `gpt = { version = "X" }` is rewritten automatically when core bumps).
+dependencies_update = true
+# One release PR for the whole workspace; both members share [workspace.package].
+git_release_enable = true
+# Conventional-commit driven changelogs.
+changelog_update = true
+
+# Both members move together (they share the workspace version).
+[[package]]
+name = "gpt-partition-core"
+
+[[package]]
+name = "gpt-partition-forensic"

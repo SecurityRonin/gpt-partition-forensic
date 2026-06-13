@@ -3,12 +3,12 @@
 # import path `use gpt::…` via the `[lib] name = "gpt"` override below.
 [package]
 name = "gpt-partition-core"
-version = "0.5.0"
-edition = "2021"
-rust-version = "1.85"
-license = "MIT"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
 description = "Pure Read+Seek GUID Partition Table (GPT) reader — header/entry/GUID/CRC32/SHA256/protective-MBR structures"
-repository = "https://github.com/SecurityRonin/gpt-partition-forensic"
+repository.workspace = true
 keywords = ["forensics", "gpt", "partition", "disk-image", "efi"]
 categories = ["parser-implementations", "filesystem"]
 exclude = ["fuzz/", ".github/", ".pre-commit-config.yaml", "deny.toml", "renovate.json"]
@@ -17,12 +17,12 @@ exclude = ["fuzz/", ".github/", ".pre-commit-config.yaml", "deny.toml", "renovat
 name = "gpt"
 
 [dependencies]
-thiserror = "2"
-serde = { version = "1", features = ["derive"], optional = true }
+thiserror = { workspace = true }
+serde = { workspace = true, optional = true }
 # Knowledge layer (sibling repo): GPT partition-type GUID → name table and
 # partition-attribute flag names. This is a *knowledge base*, not forensic
 # findings — the reader stays free of `report::Observation`/anomaly types.
-forensicnomicon = "0.5"
+forensicnomicon.workspace = true
 
 [features]
 default = []

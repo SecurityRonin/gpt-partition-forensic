@@ -6,6 +6,19 @@
       "matchManagers": ["cargo"],
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true
+    },
+    {
+      "description": "forensicnomicon is the shared knowledge layer; auto-open a bump PR in every fleet repo on a new release so the fleet never fragments across majors (0.3/0.4/0.5). In 0.x a minor bump is breaking (report model), so never automerge — review the grouped PR.",
+      "matchPackageNames": ["forensicnomicon"],
+      "groupName": "forensicnomicon (knowledge layer)",
+      "automerge": false,
+      "schedule": ["at any time"]
+    },
+    {
+      "description": "Group SecurityRonin fleet crates so a multi-crate bump (e.g. all three *-partition-forensic at once) lands as one reviewable PR.",
+      "matchPackageNames": ["/-forensic$/", "/-core$/", "/-partition-/"],
+      "groupName": "securityronin fleet crates",
+      "automerge": false
     }
   ],
   "github-actions": {
