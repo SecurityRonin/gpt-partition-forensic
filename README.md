@@ -101,7 +101,7 @@ It is a pure `Read + Seek` library with **no image-format decoding of its own** 
 - **Panic-free** — production code carries no `unwrap`/`expect`/`panic!`, enforced by the workspace's `unwrap_used`/`expect_used = deny` lints, with bounds-checked integer reads on attacker-controllable input.
 - **`unsafe`-free** — `#![forbid(unsafe_code)]` across the workspace.
 - **Fuzzed** — a `cargo fuzz` workspace drives both the parser and the full `analyse` pipeline; the invariant is "must not panic."
-- **Validated against real disk images**, not only synthetic fixtures.
+- **Independently checked crypto** — the from-scratch CRC-32/ISO-HDLC and SHA-256 are validated against third-party known-answer vectors (zlib's canonical CRC value, the NIST/FIPS 180-4 SHA-256 vectors). The GPT structural layer is currently validated against synthetic in-repo fixtures; see [the validation page](https://securityronin.github.io/gpt-partition-forensic/validation/) for the per-capability evidence tiers and the recommended `sgdisk` / TSK `mmls` oracles to close that gap.
 - **Secure by default** — the zero-config `analyse()` path performs every integrity check; you cannot accidentally skip CRC validation.
 
 ## Sibling crates
