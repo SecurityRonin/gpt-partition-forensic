@@ -8,9 +8,13 @@ description = "Forensic GUID Partition Table (GPT) parser — structure, CRC int
 repository.workspace = true
 keywords = ["forensics", "gpt", "partition", "disk-image", "efi"]
 categories = ["parser-implementations", "filesystem"]
-exclude = ["fuzz/", ".github/", ".pre-commit-config.yaml", "deny.toml", "renovate.json"]
+exclude = ["fuzz/", ".github/", ".pre-commit-config.yaml", "deny.toml", "renovate.json", "tests/real_gpt_oracle.rs"]
 
 # `fuzz/` is a standalone cargo-fuzz workspace with its own lockfile.
+# `tests/real_gpt_oracle.rs` is excluded from the published tarball because it
+# `include_bytes!`s the repo-root `tests/data/` real GPT fixture, which lives
+# outside the package dir and would break a packaged build. The other,
+# self-contained integration tests still ship.
 
 [dependencies]
 gpt = { workspace = true }
