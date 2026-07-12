@@ -16,6 +16,8 @@ fn ent(unique: [u8; 16]) -> GptEntry {
         last_lba: 0,
         attributes: 0,
         name: String::new(),
+        volume_serial: None,
+        encryption: None,
     }
 }
 

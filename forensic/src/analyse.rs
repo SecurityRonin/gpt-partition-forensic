@@ -110,11 +110,12 @@ fn analyse_inner<R: Read + Seek>(
             },
         );
     }
-    let partitions = parse_entry_array(
+    let mut partitions = parse_entry_array(
         &primary_array,
         primary.num_partition_entries,
         primary.partition_entry_size,
     );
+    populate_volume_info(reader, &mut partitions, sector_size);
 
     // ── Backup header + entry array, reconciled with the primary ────────────
     let backup = read_backup(
@@ -386,6 +387,23 @@ fn reconcile_mbr<R: Read + Seek>(
 /// Flag partitions whose first sector is near-maximal entropy with no readable
 /// filesystem — a hidden encrypted container. Partitions typed as encrypted
 /// (LUKS) are skipped, since high entropy is expected there.
+/// Populate each used partition's volume serial + BitLocker encryption from its first sector,
+/// via `forensicnomicon`'s volume-analysis (the knowledge owner). These are properties of the
+/// volume, not the partition table, so they are surfaced on every partition uniformly rather
+/// than re-read by each downstream consumer.
+fn populate_volume_info<R: Read + Seek>(
+    reader: &mut R,
+    partitions: &mut [GptEntry],
+    sector_size: u64,
+) {
+    for p in partitions.iter_mut().filter(|p| p.is_used()) {
+        if let Ok(sector) = read_sector(reader, p.first_lba, sector_size) {
+            p.volume_serial = forensicnomicon::volume_serial::volume_serial(&sector);
+            p.encryption = forensicnomicon::volume_encryption::detect_encryption(&sector);
+        }
+    }
+}
+
 fn check_encrypted_volumes<R: Read + Seek>(
     reader: &mut R,
     partitions: &[GptEntry],
