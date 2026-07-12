@@ -16,7 +16,7 @@ repository = "https://github.com/SecurityRonin/gpt-partition-forensic"
 # too, so a bump touches one line instead of every member + dev-dep + cli.
 [workspace.dependencies]
 gpt = { path = "core", version = "0.6.0", package = "gpt-partition-core" }
-forensicnomicon = "1"
+forensicnomicon = "1.6"
 thiserror = "2"
 serde = { version = "1", features = ["derive"] }
 tracing = "0.1"
@@ -43,7 +43,3 @@ cast_possible_truncation = { level = "allow", priority = 1 }
 cast_possible_wrap = { level = "allow", priority = 1 }
 cast_sign_loss = { level = "allow", priority = 1 }
 cast_precision_loss = { level = "allow", priority = 1 }
-
-# TEMPORARY: forensicnomicon volume-analysis (1.6) via branch until it publishes.
-[patch.crates-io]
-forensicnomicon = { git = "https://github.com/SecurityRonin/forensicnomicon", branch = "volume-analysis-1.6" }

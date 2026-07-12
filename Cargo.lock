@@ -5,7 +5,8 @@ version = 4
 [[package]]
 name = "forensicnomicon"
 version = "1.6.0"
-source = "git+https://github.com/SecurityRonin/forensicnomicon?branch=volume-analysis-1.6#cbac7426b2f3ac8a3ebc005c28b8ed095e43f21b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "67913b90ecf5c59b7d507927fc1ec496413ec252ffb6734f15876726b8fc7221"
 dependencies = [
  "forensicnomicon-core",
  "forensicnomicon-data",
@@ -15,7 +16,8 @@ dependencies = [
 [[package]]
 name = "forensicnomicon-core"
 version = "1.1.0"
-source = "git+https://github.com/SecurityRonin/forensicnomicon?branch=volume-analysis-1.6#cbac7426b2f3ac8a3ebc005c28b8ed095e43f21b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b81fa3bf717c97e0b7a877f30e6bf4abaf9dca751d970dab9292d03ae757d152"
 dependencies = [
  "serde",
 ]
@@ -23,7 +25,8 @@ dependencies = [
 [[package]]
 name = "forensicnomicon-data"
 version = "1.2.1"
-source = "git+https://github.com/SecurityRonin/forensicnomicon?branch=volume-analysis-1.6#cbac7426b2f3ac8a3ebc005c28b8ed095e43f21b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81a1473002767608b095a3dcd657ffb3c4c6e421c5cfe9fdca70a30fe477e0b7"
 dependencies = [
  "forensicnomicon-core",
  "serde",
@@ -31,7 +34,7 @@ dependencies = [
 
 [[package]]
 name = "gpt-partition-core"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "forensicnomicon",
  "serde",
@@ -40,7 +43,7 @@ dependencies = [
 
 [[package]]
 name = "gpt-partition-forensic"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "forensicnomicon",
  "gpt-partition-core",
