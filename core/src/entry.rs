@@ -30,6 +30,13 @@ pub struct GptEntry {
     pub attributes: u64,
     /// Partition name (decoded from UTF-16LE, trailing NULs stripped).
     pub name: String,
+    /// The volume serial (FAT `BS_VolID` / exFAT / NTFS), from `forensicnomicon::volume_serial`.
+    /// A volume property; populated by the forensic analyser from the partition's first sector
+    /// (`None` from a bare [`GptEntry::parse`], and when no serial is recognizable).
+    pub volume_serial: Option<forensicnomicon::volume_serial::VolumeSerial>,
+    /// BitLocker volume encryption (`forensicnomicon::volume_encryption`), populated by the
+    /// forensic analyser from the first sector. `None` for a plaintext volume.
+    pub encryption: Option<forensicnomicon::volume_encryption::VolumeEncryption>,
 }
 
 fn u64_le(b: &[u8], off: usize) -> u64 {
@@ -61,6 +68,10 @@ impl GptEntry {
             last_lba: u64_le(bytes, 40),
             attributes: u64_le(bytes, 48),
             name: decode_name(&bytes[NAME_OFFSET..NAME_OFFSET + NAME_LEN]),
+            // Volume properties are populated by the forensic analyser (which has the reader);
+            // a bare byte-parse has no first-sector access.
+            volume_serial: None,
+            encryption: None,
         })
     }
 

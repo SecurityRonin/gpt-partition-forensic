@@ -5,7 +5,7 @@ members = ["core", "forensic"]
 # Single source of truth for fields shared by every member (DRY): bump version /
 # MSRV / license here once; members inherit via `field.workspace = true`.
 [workspace.package]
-version = "0.6.0"
+version = "0.6.1"
 edition = "2021"
 rust-version = "1.85"
 license = "Apache-2.0"
@@ -43,3 +43,7 @@ cast_possible_truncation = { level = "allow", priority = 1 }
 cast_possible_wrap = { level = "allow", priority = 1 }
 cast_sign_loss = { level = "allow", priority = 1 }
 cast_precision_loss = { level = "allow", priority = 1 }
+
+# TEMPORARY: forensicnomicon volume-analysis (1.6) via branch until it publishes.
+[patch.crates-io]
+forensicnomicon = { git = "https://github.com/SecurityRonin/forensicnomicon", branch = "volume-analysis-1.6" }
