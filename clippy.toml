@@ -1,2 +1,2 @@
 # Product/format names that look like code identifiers to doc_markdown.
-doc-valid-idents = ["GPT", "MBR", "EFI", "CRC32", "SHA-256", "UTF-16LE", "LUKS", "VeraCrypt", "SecurityRonin", "..", "LBA", "GUID", "NTFS", "ext4"]
+doc-valid-idents = ["GPT", "MBR", "EFI", "CRC32", "SHA-256", "UTF-16LE", "LUKS", "VeraCrypt", "SecurityRonin", "..", "LBA", "GUID", "NTFS", "ext4", "BitLocker"]
