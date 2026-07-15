@@ -7,6 +7,7 @@
 use crate::crc32;
 use crate::guid::Guid;
 use crate::Error;
+use forensic_bytes::{le_u32, le_u64};
 
 /// The 8-byte GPT header signature.
 pub const SIGNATURE: &[u8; 8] = b"EFI PART";
@@ -47,15 +48,6 @@ pub struct GptHeader {
     pub partition_array_crc32: u32,
 }
 
-fn u32_le(b: &[u8], off: usize) -> u32 {
-    u32::from_le_bytes([b[off], b[off + 1], b[off + 2], b[off + 3]])
-}
-fn u64_le(b: &[u8], off: usize) -> u64 {
-    let mut a = [0u8; 8];
-    a.copy_from_slice(&b[off..off + 8]);
-    u64::from_le_bytes(a)
-}
-
 impl GptHeader {
     /// Parse a GPT header from the start of `sector`.
     ///
@@ -73,8 +65,8 @@ impl GptHeader {
             return Err(Error::BadSignature);
         }
 
-        let header_size = u32_le(sector, 12);
-        let header_crc32 = u32_le(sector, 16);
+        let header_size = le_u32(sector, 12);
+        let header_crc32 = le_u32(sector, 16);
         let header_crc_valid = compute_header_crc(sector, header_size)
             .is_some_and(|computed| computed == header_crc32);
 
@@ -82,19 +74,19 @@ impl GptHeader {
         disk_guid.copy_from_slice(&sector[56..72]);
 
         Ok(GptHeader {
-            revision: u32_le(sector, 8),
+            revision: le_u32(sector, 8),
             header_size,
             header_crc32,
             header_crc_valid,
-            my_lba: u64_le(sector, 24),
-            alternate_lba: u64_le(sector, 32),
-            first_usable_lba: u64_le(sector, 40),
-            last_usable_lba: u64_le(sector, 48),
+            my_lba: le_u64(sector, 24),
+            alternate_lba: le_u64(sector, 32),
+            first_usable_lba: le_u64(sector, 40),
+            last_usable_lba: le_u64(sector, 48),
             disk_guid: Guid(disk_guid),
-            partition_entry_lba: u64_le(sector, 72),
-            num_partition_entries: u32_le(sector, 80),
-            partition_entry_size: u32_le(sector, 84),
-            partition_array_crc32: u32_le(sector, 88),
+            partition_entry_lba: le_u64(sector, 72),
+            num_partition_entries: le_u32(sector, 80),
+            partition_entry_size: le_u32(sector, 84),
+            partition_array_crc32: le_u32(sector, 88),
         })
     }
 }
