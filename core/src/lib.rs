@@ -25,6 +25,8 @@ pub mod guid;
 pub mod header;
 pub mod mbr;
 pub mod sha256;
+#[cfg(feature = "vfs")]
+pub mod vfs;
 
 pub use entry::GptEntry;
 pub use guid::Guid;
