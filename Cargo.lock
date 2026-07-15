@@ -3,10 +3,6 @@
 version = 4
 
 [[package]]
-name = "forensic-bytes"
-version = "0.1.0"
-
-[[package]]
 name = "forensicnomicon"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -40,8 +36,8 @@ dependencies = [
 name = "gpt-partition-core"
 version = "0.6.1"
 dependencies = [
- "forensic-bytes",
  "forensicnomicon",
+ "safe-read",
  "serde",
  "thiserror",
 ]
@@ -99,6 +95,10 @@ checksum = "dfbc457d0c7a0759a614551b11a6409e5951f6c7537be1f1b7682b9ae9230368"
 dependencies = [
  "proc-macro2",
 ]
+
+[[package]]
+name = "safe-read"
+version = "0.1.0"
 
 [[package]]
 name = "serde"

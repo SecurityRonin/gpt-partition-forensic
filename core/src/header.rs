@@ -7,7 +7,7 @@
 use crate::crc32;
 use crate::guid::Guid;
 use crate::Error;
-use forensic_bytes::{le_u32, le_u64};
+use safe_read::{le_u32, le_u64};
 
 /// The 8-byte GPT header signature.
 pub const SIGNATURE: &[u8; 8] = b"EFI PART";

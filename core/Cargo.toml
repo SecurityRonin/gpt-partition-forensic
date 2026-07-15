@@ -20,7 +20,7 @@ name = "gpt"
 thiserror = { workspace = true }
 serde = { workspace = true, optional = true }
 # Shared never-panic bounded byte readers (le_u32/le_u64) for header/entry fields.
-forensic-bytes = { version = "0.1", path = "../../forensic-bytes" }
+safe-read = { version = "0.1", path = "../../safe-read" }
 # Knowledge layer (sibling repo): GPT partition-type GUID → name table and
 # partition-attribute flag names. This is a *knowledge base*, not forensic
 # findings — the reader stays free of `report::Observation`/anomaly types.

@@ -6,7 +6,7 @@
 
 use crate::guid::Guid;
 use crate::Error;
-use forensic_bytes::le_u64;
+use safe_read::le_u64;
 
 /// Minimum entry size the spec permits (and the default): 128 bytes.
 pub const MIN_ENTRY_SIZE: usize = 128;
