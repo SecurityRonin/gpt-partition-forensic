@@ -6,6 +6,7 @@
 
 use crate::guid::Guid;
 use crate::Error;
+use forensic_bytes::le_u64;
 
 /// Minimum entry size the spec permits (and the default): 128 bytes.
 pub const MIN_ENTRY_SIZE: usize = 128;
@@ -39,12 +40,6 @@ pub struct GptEntry {
     pub encryption: Option<forensicnomicon::volume_encryption::VolumeEncryption>,
 }
 
-fn u64_le(b: &[u8], off: usize) -> u64 {
-    let mut a = [0u8; 8];
-    a.copy_from_slice(&b[off..off + 8]);
-    u64::from_le_bytes(a)
-}
-
 impl GptEntry {
     /// Parse one entry from the first 128 bytes of `bytes`.
     ///
@@ -64,9 +59,9 @@ impl GptEntry {
         Ok(GptEntry {
             type_guid: Guid(type_guid),
             unique_guid: Guid(unique_guid),
-            first_lba: u64_le(bytes, 32),
-            last_lba: u64_le(bytes, 40),
-            attributes: u64_le(bytes, 48),
+            first_lba: le_u64(bytes, 32),
+            last_lba: le_u64(bytes, 40),
+            attributes: le_u64(bytes, 48),
             name: decode_name(&bytes[NAME_OFFSET..NAME_OFFSET + NAME_LEN]),
             // Volume properties are populated by the forensic analyser (which has the reader);
             // a bare byte-parse has no first-sector access.
