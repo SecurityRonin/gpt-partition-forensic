@@ -9,7 +9,33 @@
 use std::sync::Arc;
 
 use forensic_vfs::adapters::SubRange;
-use forensic_vfs::{DynSource, VfsError, VfsResult, VolumeDesc, VolumeScheme, VolumeSystem};
+use forensic_vfs::{
+    DynSource, ImageSource, VfsError, VfsResult, VolumeDesc, VolumeKind, VolumeScheme, VolumeSystem,
+};
+
+use crate::GptHeader;
+
+/// Cap on the partition-entry-array read, so a header claiming an absurd
+/// `num_partition_entries` cannot force an unbounded allocation. 4 MiB holds
+/// 32768 max-size (128-byte) entries — far beyond any real GPT (typically 128).
+const ENTRY_ARRAY_CAP: u64 = 4 * 1024 * 1024;
+
+/// Fill `buf` from `src` starting at `off`, tolerating short reads and stopping
+/// at EOF (any unfilled tail stays zeroed — the parser bounds-checks its slices).
+fn fill(src: &dyn ImageSource, mut off: u64, mut buf: &mut [u8]) -> VfsResult<()> {
+    while !buf.is_empty() {
+        let n = src.read_at(off, buf)?;
+        if n == 0 {
+            break; // EOF
+        }
+        off = off.saturating_add(n as u64);
+        let Some(rest) = buf.get_mut(n..) else {
+            break; // cov:unreachable: read_at returns n <= buf.len()
+        };
+        buf = rest;
+    }
+    Ok(())
+}
 
 /// A GPT partition scheme over one parent byte source.
 pub struct GptVolumes {
@@ -18,12 +44,48 @@ pub struct GptVolumes {
 }
 
 impl GptVolumes {
-    /// Probe `parent` for a GPT and build the volume table.
+    /// Probe `parent` for a GPT — trying 512- then 4096-byte logical sectors,
+    /// since the sector size is not stored in the GPT itself — and build the
+    /// volume table. Returns [`VfsError::Unsupported`] if no `EFI PART` header is
+    /// found at LBA 1 under either sector size.
     pub fn open(parent: DynSource) -> VfsResult<Self> {
-        // RED: not implemented yet — no partitions parsed.
-        Ok(Self {
-            parent,
-            volumes: Vec::new(),
+        for sector_size in [512u64, 4096u64] {
+            let mut hdr = vec![0u8; sector_size as usize];
+            fill(&*parent, sector_size, &mut hdr)?; // LBA 1 = 1 * sector_size
+            let Ok(header) = GptHeader::parse(&hdr) else {
+                continue; // no EFI PART signature at this sector size
+            };
+
+            let num = header.num_partition_entries;
+            let entry_size = header.partition_entry_size;
+            let array_len = u64::from(num)
+                .saturating_mul(u64::from(entry_size))
+                .min(ENTRY_ARRAY_CAP);
+            let array_off = header.partition_entry_lba.saturating_mul(sector_size);
+            let mut array = vec![0u8; array_len as usize];
+            fill(&*parent, array_off, &mut array)?;
+
+            let volumes = crate::entry::parse_entry_array(&array, num, entry_size)
+                .iter()
+                .enumerate()
+                .map(|(i, e)| {
+                    // last_lba is inclusive: length spans first..=last.
+                    let sectors = e.last_lba.saturating_sub(e.first_lba).saturating_add(1);
+                    VolumeDesc {
+                        index: i,
+                        kind: VolumeKind::Partition,
+                        start: e.first_lba.saturating_mul(sector_size),
+                        len: sectors.saturating_mul(sector_size),
+                        type_hint: Some(e.type_guid.to_string()),
+                        label: (!e.name.is_empty()).then(|| e.name.clone()),
+                    }
+                })
+                .collect();
+            return Ok(Self { parent, volumes });
+        }
+        Err(VfsError::Unsupported {
+            layer: "GptVolumes",
+            scheme: "GPT".to_string(),
         })
     }
 }
