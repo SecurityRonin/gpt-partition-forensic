@@ -20,7 +20,7 @@ name = "gpt"
 thiserror = { workspace = true }
 serde = { workspace = true, optional = true }
 # Shared never-panic bounded byte readers (le_u32/le_u64) for header/entry fields.
-safe-read = { version = "0.1", path = "../../safe-read" }
+safe-read = "0.1"
 # Knowledge layer (sibling repo): GPT partition-type GUID → name table and
 # partition-attribute flag names. This is a *knowledge base*, not forensic
 # findings — the reader stays free of `report::Observation`/anomaly types.
@@ -28,7 +28,7 @@ forensicnomicon.workspace = true
 # forensic-vfs VolumeSystem contract (optional): exposes GPT partitions as a
 # composable byte-window scheme (E01 → GPT → NTFS). Behind the `vfs` feature so
 # the bare parser does not inherit the VFS dependency graph (ADR 0004).
-forensic-vfs = { version = "0.1", optional = true }
+forensic-vfs = { version = "0.2", optional = true }
 
 [features]
 default = []
