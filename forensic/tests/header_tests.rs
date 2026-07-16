@@ -77,3 +77,25 @@ fn too_short_errors() {
         Err(Error::TooShort { .. })
     ));
 }
+
+#[test]
+fn implausible_header_size_marks_crc_invalid() {
+    // header_size below the 92-byte minimum is implausible: compute_header_crc
+    // returns None, so the header cannot self-validate (crc_valid == false).
+    let mut s = build_header(1, 8191, 2, 128, 128, 0);
+    s[12..16].copy_from_slice(&8u32.to_le_bytes()); // header_size = 8 (< 92)
+    let h = GptHeader::parse(&s).unwrap();
+    assert!(
+        !h.header_crc_valid,
+        "an implausible header_size cannot yield a valid self-CRC"
+    );
+}
+
+#[test]
+fn oversized_header_size_marks_crc_invalid() {
+    // header_size larger than the buffer is equally implausible → crc None/invalid.
+    let mut s = build_header(1, 8191, 2, 128, 128, 0);
+    s[12..16].copy_from_slice(&1024u32.to_le_bytes()); // header_size > 512 sector
+    let h = GptHeader::parse(&s).unwrap();
+    assert!(!h.header_crc_valid);
+}

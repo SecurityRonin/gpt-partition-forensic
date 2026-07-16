@@ -118,7 +118,11 @@ pub fn parse_entry_array(array: &[u8], num_entries: u32, entry_size: u32) -> Vec
         let Some(slot) = array.get(start..start + MIN_ENTRY_SIZE) else {
             break;
         };
+        // `slot` is exactly MIN_ENTRY_SIZE bytes by the `.get` above, so
+        // `GptEntry::parse` (which only errs on a short buffer) cannot fail here;
+        // the guard is kept so a future stride change degrades gracefully.
         if let Ok(entry) = GptEntry::parse(slot) {
+            // cov:unreachable: parse of a 128-byte slot is infallible
             if entry.is_used() {
                 out.push(entry);
             }

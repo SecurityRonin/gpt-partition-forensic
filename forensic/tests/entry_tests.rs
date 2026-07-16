@@ -4,6 +4,7 @@
 use gpt_partition_forensic::{
     crc32::checksum,
     entry::{parse_entry_array, GptEntry},
+    Error,
 };
 
 /// EFI System Partition type GUID C12A7328-F81F-11D2-BA4B-00A0C93EC93B, on-disk.
@@ -60,4 +61,34 @@ fn array_parse_skips_unused_and_crc_matches() {
     // Whole-array CRC is what a GPT header would store.
     let crc = checksum(&array);
     assert_ne!(crc, 0);
+}
+
+#[test]
+fn parse_too_short_errors() {
+    // A buffer under MIN_ENTRY_SIZE (128) yields TooShort, never a panic.
+    assert!(matches!(
+        GptEntry::parse(&[0u8; 64]),
+        Err(Error::TooShort { need: 128, got: 64 })
+    ));
+}
+
+#[test]
+fn array_parse_rejects_undersized_stride() {
+    // entry_size < 128 is malformed: no entries are decoded (stride guard).
+    let array = vec![0xAAu8; 512];
+    assert!(parse_entry_array(&array, 4, 64).is_empty());
+}
+
+#[test]
+fn array_parse_stops_at_truncated_buffer() {
+    // Header claims 4 entries but the array holds only 1.5 → the second slot runs
+    // off the end and iteration stops (the `break` guard), not a panic.
+    let mut array = build_entry(ESP_TYPE, 2048, 4095, "One").to_vec();
+    array.extend_from_slice(&[0u8; 64]); // half of a second slot
+    let used = parse_entry_array(&array, 4, 128);
+    assert_eq!(
+        used.len(),
+        1,
+        "only the one complete used entry is returned"
+    );
 }

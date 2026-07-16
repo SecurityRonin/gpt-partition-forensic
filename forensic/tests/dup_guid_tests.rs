@@ -35,6 +35,17 @@ fn distinct_guids_have_no_duplicate() {
 }
 
 #[test]
+fn zero_unique_guids_are_ignored() {
+    // The all-zero "unset" GUID is never a real shared identity: two zero-GUID
+    // entries must not be reported as a collision (the is_zero skip arm).
+    let parts = vec![ent([0; 16]), ent([0; 16])];
+    assert!(
+        find_duplicate_partition_guids(&parts).is_empty(),
+        "all-zero unique GUIDs must not collide"
+    );
+}
+
+#[test]
 fn anomaly_kind_exists() {
     // The analysis surfaces it as DuplicatePartitionGuid.
     let _ = AnomalyKind::DuplicatePartitionGuid { a: 0, b: 1 };

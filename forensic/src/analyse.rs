@@ -357,6 +357,9 @@ fn reconcile_mbr<R: Read + Seek>(
     anomalies: &mut Vec<Anomaly>,
 ) {
     let Ok(sector) = read_sector(reader, 0, sector_size) else {
+        // cov:unreachable: LBA 0 precedes the primary GPT (LBA 1), which was
+        // already read successfully to reach here, so a contiguous source always
+        // has LBA 0; the guard degrades gracefully for a custom sparse reader.
         return; // no readable MBR to reconcile against
     };
     let mbr = gpt::mbr::parse_mbr_entries(&sector);
