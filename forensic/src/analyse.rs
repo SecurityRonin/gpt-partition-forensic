@@ -206,11 +206,20 @@ fn read_sector<R: Read + Seek>(
     lba: u64,
     sector_size: u64,
 ) -> Result<[u8; 512], Error> {
-    reader.seek(SeekFrom::Start(lba * sector_size))?;
+    // Saturating: a crafted LBA whose byte offset overflows u64 is beyond any
+    // real disk — the seek lands at the cap and the subsequent read hits EOF,
+    // yielding `Error::Io`, which every caller degrades gracefully instead of
+    // panicking on the multiply.
+    reader.seek(SeekFrom::Start(lba.saturating_mul(sector_size)))?;
     let mut buf = [0u8; 512];
     reader.read_exact(&mut buf)?;
     Ok(buf)
 }
+
+/// Cap on the partition-entry-array read, so a header claiming an absurd
+/// `num_partition_entries` cannot force an unbounded allocation. 4 MiB holds
+/// 32768 max-size (128-byte) entries — far beyond any real GPT (typically 128).
+const ENTRY_ARRAY_CAP: u64 = 4 * 1024 * 1024;
 
 /// Read a header's partition entry array (`num * entry_size` bytes).
 fn read_entry_array<R: Read + Seek>(
@@ -218,8 +227,14 @@ fn read_entry_array<R: Read + Seek>(
     h: &GptHeader,
     sector_size: u64,
 ) -> Result<Vec<u8>, Error> {
-    let len = h.num_partition_entries as usize * h.partition_entry_size as usize;
-    reader.seek(SeekFrom::Start(h.partition_entry_lba * sector_size))?;
+    // Saturating + capped: crafted `num`/`entry_size` fields must not overflow
+    // the length product nor drive an allocation bomb (mirrors the vfs adapter).
+    let len = u64::from(h.num_partition_entries)
+        .saturating_mul(u64::from(h.partition_entry_size))
+        .min(ENTRY_ARRAY_CAP) as usize;
+    reader.seek(SeekFrom::Start(
+        h.partition_entry_lba.saturating_mul(sector_size),
+    ))?;
     let mut buf = vec![0u8; len];
     reader.read_exact(&mut buf)?;
     Ok(buf)
