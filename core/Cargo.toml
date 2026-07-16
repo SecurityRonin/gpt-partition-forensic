@@ -25,10 +25,15 @@ safe-read = { version = "0.1", path = "../../safe-read" }
 # partition-attribute flag names. This is a *knowledge base*, not forensic
 # findings — the reader stays free of `report::Observation`/anomaly types.
 forensicnomicon.workspace = true
+# forensic-vfs VolumeSystem contract (optional): exposes GPT partitions as a
+# composable byte-window scheme (E01 → GPT → NTFS). Behind the `vfs` feature so
+# the bare parser does not inherit the VFS dependency graph (ADR 0004).
+forensic-vfs = { version = "0.1", optional = true }
 
 [features]
 default = []
 serde = ["dep:serde", "forensicnomicon/serde"]
+vfs = ["dep:forensic-vfs"]
 
 [lints]
 workspace = true
