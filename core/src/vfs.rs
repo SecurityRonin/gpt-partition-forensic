@@ -1,6 +1,6 @@
 //! `forensic-vfs` [`VolumeSystem`] adapter for GPT, behind the `vfs` feature.
 //!
-//! Wraps a parent [`ImageSource`](forensic_vfs::ImageSource) (a raw disk, or an
+//! Wraps a parent [`ImageSource`] (a raw disk, or an
 //! E01/VMDK/… container that already implements it) and exposes the disk's GPT
 //! partitions as [`VolumeDesc`]s, each openable as a [`SubRange`] byte window.
 //! This is the structural bridge that lets `E01 → GPT → NTFS` compose without
