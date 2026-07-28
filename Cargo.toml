@@ -15,7 +15,7 @@ repository = "https://github.com/SecurityRonin/gpt-partition-forensic"
 # members write `dep.workspace = true`. The inter-crate `gpt` version lives here
 # too, so a bump touches one line instead of every member + dev-dep + cli.
 [workspace.dependencies]
-gpt = { path = "core", version = "0.6.0", package = "gpt-partition-core" }
+gpt = { path = "core", version = "0.6.1", package = "gpt-partition-core" }
 forensicnomicon = "1.6"
 thiserror = "2"
 serde = { version = "1", features = ["derive"] }
