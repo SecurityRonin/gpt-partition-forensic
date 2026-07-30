@@ -17,10 +17,10 @@ url = "https://raw.githubusercontent.com/google/rust-crate-audits/main/audits.to
 url = "https://raw.githubusercontent.com/mozilla/supply-chain/main/audits.toml"
 
 [policy.gpt-partition-core]
-audit-as-crates-io = true
+audit-as-crates-io = false
 
 [policy.gpt-partition-forensic]
-audit-as-crates-io = true
+audit-as-crates-io = false
 
 [[exemptions.forensic-vfs]]
 version = "0.2.0"
