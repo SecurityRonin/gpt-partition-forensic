@@ -22,30 +22,6 @@ audit-as-crates-io = false
 [policy.gpt-partition-forensic]
 audit-as-crates-io = false
 
-[[exemptions.forensic-vfs]]
-version = "0.2.0"
-criteria = "safe-to-deploy"
-
-[[exemptions.forensicnomicon]]
-version = "1.6.0"
-criteria = "safe-to-deploy"
-
-[[exemptions.forensicnomicon-core]]
-version = "1.1.0"
-criteria = "safe-to-deploy"
-
-[[exemptions.forensicnomicon-data]]
-version = "1.2.1"
-criteria = "safe-to-deploy"
-
-[[exemptions.gpt-partition-core]]
-version = "0.6.2"
-criteria = "safe-to-deploy"
-
-[[exemptions.gpt-partition-forensic]]
-version = "0.6.2"
-criteria = "safe-to-deploy"
-
 [[exemptions.itoa]]
 version = "1.0.18"
 criteria = "safe-to-run"
@@ -64,10 +40,6 @@ criteria = "safe-to-deploy"
 
 [[exemptions.quote]]
 version = "1.0.46"
-criteria = "safe-to-deploy"
-
-[[exemptions.safe-read]]
-version = "0.1.0"
 criteria = "safe-to-deploy"
 
 [[exemptions.serde]]
